@@ -20,18 +20,27 @@ export const Overview = () => {
           <MessageIcon size={32} />
         </p>
         <p>
-          FXperto es una plataforma de estrategias cambiarias que ayuda a empresas a optimizar la compra y venta de dólares con datos en tiempo real, análisis estratégico y alertas clave. No predecimos el mercado, pero sí te damos las herramientas para tomar decisiones informadas y proteger tu rentabilidad. Con FXperto, conviertes la incertidumbre cambiaria en una ventaja competitiva.
-        </p>
-        <p>
-          Puedes aprender más sobre FXperto visitando la{' '}
+          Bienvenido a{' '}
           <Link
             className="font-medium underline underline-offset-4"
-            href="www.fxperto.com"
+            href="https://www.fxperto.com"
             target="_blank"
           >
-            página web
+            FXperto
           </Link>
-          .
+          , una plataforma de{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">estrategias cambiarias</code>{' '}
+          que ayuda a empresas a optimizar la compra y venta de dólares con{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">datos en tiempo real</code>,{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">análisis estratégico</code> y{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">alertas clave</code>. No predecimos el mercado, pero sí te damos las herramientas para{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">tomar decisiones informadas</code> y{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">proteger tu rentabilidad</code>.
+        </p>
+        <p>
+          Con FXperto, conviertes la{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">incertidumbre cambiaria</code> en una{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">ventaja competitiva</code>.
         </p>
       </div>
     </motion.div>
