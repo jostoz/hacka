@@ -20,29 +20,16 @@ export const Overview = () => {
           <MessageIcon size={32} />
         </p>
         <p>
-          This is{' '}
-          <Link
-            className="font-medium underline underline-offset-4"
-            href="https://github.com/vercel/ai-chatbot"
-            target="_blank"
-          >
-            FXperto a
-          </Link>{' '}
-          financial assitant built with Next.js and the AI SDK by Vercel. It uses
-          the{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">OpenAi</code>{' '}
-          models to power the financial{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">asssitant</code> 
-          to create a seamless  experience.
+          FXperto es una plataforma de estrategias cambiarias que ayuda a empresas a optimizar la compra y venta de dólares con datos en tiempo real, análisis estratégico y alertas clave. No predecimos el mercado, pero sí te damos las herramientas para tomar decisiones informadas y proteger tu rentabilidad. Con FXperto, conviertes la incertidumbre cambiaria en una ventaja competitiva.
         </p>
         <p>
-          You can learn more about FXperto by visiting the{' '}
+          Puedes aprender más sobre FXperto visitando la{' '}
           <Link
             className="font-medium underline underline-offset-4"
             href="www.fxperto.com"
             target="_blank"
           >
-            webpage
+            página web
           </Link>
           .
         </p>
