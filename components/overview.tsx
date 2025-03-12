@@ -28,12 +28,12 @@ export const Overview = () => {
           >
             FXperto a
           </Link>{' '}
-          chatbot template built with Next.js and the AI SDK by Vercel. It uses
+          financial assitant built with Next.js and the AI SDK by Vercel. It uses
           the{' '}
           <code className="rounded-md bg-muted px-1 py-0.5">OpenAi</code>{' '}
           models to power the financial{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">asssitant</code> hook
-          to create a seamless chat experience.
+          <code className="rounded-md bg-muted px-1 py-0.5">asssitant</code> 
+          to create a seamless  experience.
         </p>
         <p>
           You can learn more about FXperto by visiting the{' '}

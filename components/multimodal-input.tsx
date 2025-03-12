@@ -27,22 +27,26 @@ import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-
 const suggestedActions = [
   {
     title: 'Analiza el mercado',
-    label: 'EUR/USD',
-    action: '¿Puedes analizar el par EUR/USD y darme tu perspectiva técnica?',
+    label: 'USD/MXN',
+    action: '¿Puedes analizar el par USD/MXN y darme tu perspectiva técnica?',
   },
   {
-    title: 'Explícame el concepto',
-    label: 'de gestión de riesgo',
-    action: '¿Puedes explicarme los principios básicos de la gestión de riesgo en trading?',
+    title: 'Genera análisis del dólar esta semana',
+    label: 'Análisis del dólar',
+    action: '¿Puedes generar un análisis del comportamiento del dólar esta semana?',
   },
   {
-    title: 'Calcula el tamaño',
-    label: 'de mi posición',
-    action: '¿Puedes ayudarme a calcular el tamaño correcto de mi posición si quiero arriesgar 2% en una operación?',
+    title: 'Generar estrategia de compra venta',
+    label: 'Estrategia de trading',
+    action: '¿Puedes ayudarme a generar una estrategia de compra y venta para el mercado actual?',
+  },
+  {
+    title: 'Consulta de compra de divisas en el mercado spot',
+    label: 'Compra de divisas',
+    action: '¿Puedes proporcionarme información sobre la compra de divisas en el mercado spot?',
   }
 ];
 
