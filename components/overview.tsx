@@ -20,29 +20,29 @@ export const Overview = () => {
           <MessageIcon size={32} />
         </p>
         <p>
-          This is a{' '}
+          This is{' '}
           <Link
             className="font-medium underline underline-offset-4"
             href="https://github.com/vercel/ai-chatbot"
             target="_blank"
           >
-            TUTOR AI 1:1
+            FXperto a
           </Link>{' '}
           chatbot template built with Next.js and the AI SDK by Vercel. It uses
           the{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">streamText</code>{' '}
-          function in the server and the{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">useChat</code> hook
-          on the client to create a seamless chat experience.
+          <code className="rounded-md bg-muted px-1 py-0.5">OpenAi</code>{' '}
+          models to power the financial{' '}
+          <code className="rounded-md bg-muted px-1 py-0.5">asssitant</code> hook
+          to create a seamless chat experience.
         </p>
         <p>
-          You can learn more about the AI SDK by visiting the{' '}
+          You can learn more about FXperto by visiting the{' '}
           <Link
             className="font-medium underline underline-offset-4"
-            href="https://sdk.vercel.ai/docs"
+            href="www.fxperto.com"
             target="_blank"
           >
-            docs
+            webpage
           </Link>
           .
         </p>

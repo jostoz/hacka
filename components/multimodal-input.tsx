@@ -30,15 +30,20 @@ import { Textarea } from './ui/textarea';
 
 const suggestedActions = [
   {
-    title: 'What is the weather',
-    label: 'in San Francisco?',
-    action: 'What is the weather in San Francisco?',
+    title: 'Analiza el mercado',
+    label: 'EUR/USD',
+    action: '¿Puedes analizar el par EUR/USD y darme tu perspectiva técnica?',
   },
   {
-    title: 'Help me draft an essay',
-    label: 'about Silicon Valley',
-    action: 'Help me draft a short essay about Silicon Valley',
+    title: 'Explícame el concepto',
+    label: 'de gestión de riesgo',
+    action: '¿Puedes explicarme los principios básicos de la gestión de riesgo en trading?',
   },
+  {
+    title: 'Calcula el tamaño',
+    label: 'de mi posición',
+    action: '¿Puedes ayudarme a calcular el tamaño correcto de mi posición si quiero arriesgar 2% en una operación?',
+  }
 ];
 
 export function MultimodalInput({
