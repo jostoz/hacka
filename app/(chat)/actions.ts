@@ -17,11 +17,9 @@ export async function generateTitleFromUserMessage({
 }) {
   const { text: title } = await generateText({
     model: customModel('gpt-4o-mini'),
-    system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 80 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
+    system: `
+    Bienvenido a FXperto, una plataforma de estrategias cambiarias que ayuda a empresas a optimizar la compra y venta de dólares con datos en tiempo real, análisis estratégico y alertas clave. No predecimos el mercado, pero sí te damos las herramientas para tomar decisiones informadas y proteger tu rentabilidad.
+    `,
     prompt: JSON.stringify(message),
   });
 
