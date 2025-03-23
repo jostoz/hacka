@@ -47,6 +47,17 @@ const weatherTools: AllowedTools[] = ['getWeather'];
 
 const allTools: AllowedTools[] = [...blocksTools, ...weatherTools];
 
+const analysisPrompt = `
+Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, genera un análisis financiero con la siguiente estructura:
+
+1. **Introducción**: Breve descripción del contexto actual del mercado.
+2. **Análisis de Datos**: Presenta los datos financieros relevantes, incluyendo tendencias y patrones observados.
+3. **Estrategias Recomendadas**: Ofrece estrategias basadas en los datos analizados.
+4. **Conclusiones**: Resumen de los hallazgos clave y recomendaciones finales.
+
+Asegúrate de utilizar encabezados para cada sección y presentar los datos de manera clara y concisa.
+`;
+
 export async function POST(request: Request) {
   const {
     id,
@@ -137,8 +148,7 @@ export async function POST(request: Request) {
 
           const { fullStream } = await streamText({
             model: customModel(model.apiIdentifier),
-            system:
-              'Write about the given topic. Markdown is supported. Use headings wherever appropriate.',
+            system: analysisPrompt,
             prompt: title,
           });
 
