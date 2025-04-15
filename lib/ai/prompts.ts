@@ -78,10 +78,10 @@ export const forexPrompts = {
   `,
 
   risk: `
-  Para un balance de ${balance} y riesgo del ${RIESGO}%:
+  Para un balance de {balance} y riesgo del {RIESGO}%:
   1. **Cálculos**:
      - Tamaño de posición: {LOTES} lotes para {PIPS} pips de SL
-     - Margen utilizado: ${MONTO} (apalancamiento 1:{X})
+     - Margen utilizado: {MONTO} (apalancamiento 1:{X})
   2. **Advertencias**:
      - "No excedas el {X}% de tu capital por operación"
      - "Evita apalancamiento >1:30 en noticias importantes"
