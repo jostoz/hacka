@@ -14,7 +14,7 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
-import { ForexToolResult } from './forex-tool-result';
+import { ForexToolResult } from './ForexToolResult';
 
 export const PreviewMessage = ({
   chatId,
