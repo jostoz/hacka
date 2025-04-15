@@ -15,6 +15,10 @@ import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
 import { ForexToolResult } from './ForexToolResult';
+import { Chart } from './Chart';
+import { Table } from './Table';
+import { TechnicalAnalysisBlock } from './technical-analysis-block';
+import { Card } from '@/components/ui/card';
 
 export const PreviewMessage = ({
   chatId,
@@ -31,6 +35,21 @@ export const PreviewMessage = ({
   vote: Vote | undefined;
   isLoading: boolean;
 }) => {
+  if (message.role === "tool" && message.name === "fetchTechnicalAnalysis") {
+    const result = JSON.parse(message.content);
+    if (result.type === 'technical-analysis') {
+      return (
+        <motion.div
+          className="w-full max-w-3xl mx-auto px-4 mt-4"
+          initial={{ y: 5, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+        >
+          <TechnicalAnalysisBlock data={result.data} />
+        </motion.div>
+      );
+    }
+  }
+
   return (
     <motion.div
       className="w-full mx-auto max-w-3xl px-4 group/message"

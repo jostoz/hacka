@@ -28,6 +28,7 @@ import {
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../actions';
+import { tools } from '@/lib/tools/forex';
 
 export const maxDuration = 60;
 
@@ -37,7 +38,8 @@ type AllowedTools =
   | 'requestSuggestions'
   | 'getWeather'
   | 'calculatePipValue'
-  | 'fetchFxRates';
+  | 'fetchFxRates'
+  | 'fetchTechnicalAnalysis';
 
 const blocksTools: AllowedTools[] = [
   'createDocument',
@@ -49,7 +51,7 @@ const weatherTools: AllowedTools[] = ['getWeather'];
 
 const forexTools: AllowedTools[] = ['calculatePipValue', 'fetchFxRates'];
 
-const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexTools];
+const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexTools, 'fetchTechnicalAnalysis'];
 
 const analysisPrompt = `
 Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, genera un análisis financiero con la siguiente estructura:
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
 
   const result = await streamText({
     model: customModel(model.apiIdentifier),
-    system,
+    system: systemPrompt(userMessage.content),
     messages: coreMessages,
     maxSteps: 5,
     experimental_activeTools: allTools,
@@ -363,7 +365,9 @@ export async function POST(request: Request) {
           return { pair, rate: 1.25, change: '+0.02%' };
         },
       },
+      fetchTechnicalAnalysis: tools.fetchTechnicalAnalysis,
     },
+    tool_choice: "auto",
     onFinish: async ({ responseMessages }) => {
       if (session.user?.id) {
         try {
@@ -391,6 +395,21 @@ export async function POST(request: Request) {
               },
             ),
           });
+
+          const toolCalls = responseMessages.filter(m => m.role === 'tool');
+          if (toolCalls.length > 0) {
+            for (const toolCall of toolCalls) {
+              const toolName = toolCall.name as keyof typeof tools;
+              const args = JSON.parse(toolCall.content);
+              const result = await tools[toolName].function(args);
+              
+              responseMessages.push({
+                role: "tool",
+                name: toolName,
+                content: JSON.stringify(result),
+              });
+            }
+          }
         } catch (error) {
           console.error('Failed to save chat');
         }

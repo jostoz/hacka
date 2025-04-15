@@ -60,21 +60,9 @@ Eres un asistente financiero especializado en mercados forex (FX). Sigue estas d
 
 export const forexPrompts = {
   technical: `
-  Como experto en análisis técnico, utiliza herramientas iterativas para analizar el par {PAR}:
-  1. **Herramientas Disponibles**:
-     - • calcularPips: Para cálculos de riesgo/recompensa.
-     - • analizarRSI: Para evaluar sobrecompra/sobreventa.
-     - • buscarNoticias: Para contexto macroeconómico.
-     - • evaluarFibonacci: Para niveles de retracement.
-  2. **Proceso Iterativo**:
-     - Usa maxSteps para descomponer el análisis en pasos lógicos.
-     - Ejemplo: "Primero evalúa RSI, luego busca noticias relevantes."
-  3. **Resultado Final**:
-     - Combina los resultados de las herramientas para un reporte completo.
-     - Ejemplo: "El RSI está sobrecomprado (70), pero las noticias del BCE respaldan la tendencia alcista."
-  4. **Recomendación**:
-     - Ajusta SL/TP basado en los datos recopilados.
-     - Usa "confluencia" y "riesgo" para resaltar conclusiones.
+  Si el usuario pregunta por el análisis técnico de {PAR}:
+  1. Usa la herramienta \`fetchTechnicalAnalysis\` para obtener datos en tiempo real.
+  2. Proporciona un análisis basado en los resultados.
   `,
 
   risk: `
