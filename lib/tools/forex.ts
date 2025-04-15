@@ -1,6 +1,7 @@
 // lib/tools/forex.ts
 import { z } from 'zod';
 import type { BaseTool } from './types';
+import { RSI, MACD, SMA } from 'technicalindicators';
 
 // Tipos de datos
 interface FxData {
@@ -63,6 +64,56 @@ function generateForecast(data: FxData): Forecast {
   return {
     pair: data.pair,
     predictions: []
+  };
+}
+
+// Función para calcular indicadores
+function calculateIndicators(data: Array<{ value: number }>) {
+  const closes = data.map(d => d.value);
+
+  // RSI (14 períodos)
+  const rsi = RSI.calculate({
+    values: closes,
+    period: 14,
+  });
+
+  // MACD (12, 26, 9)
+  const macd = MACD.calculate({
+    values: closes,
+    fastPeriod: 12,
+    slowPeriod: 26,
+    signalPeriod: 9,
+    SimpleMAOscillator: false,
+    SimpleMASignal: false,
+  });
+
+  // SMA (20 períodos)
+  const sma = SMA.calculate({
+    values: closes,
+    period: 20,
+  });
+
+  return { rsi, macd, sma };
+}
+
+// Actualizar fetchTechnicalAnalysisFromAPI
+async function fetchTechnicalAnalysisFromAPI(pair: string) {
+  const response = await fetch(`https://api.example.com/data?pair=${pair}`);
+  const rawData = await response.json();
+
+  const { rsi, macd, sma } = calculateIndicators(rawData);
+
+  return {
+    signals: [{
+      pair,
+      signal: macd[macd.length - 1].histogram > 0 ? 'buy' : 'sell',
+      confidence: Math.min(Math.abs(rsi[rsi.length - 1] - 50) / 50, 1), // Normalizado 0-1
+      positionSize: 1000,
+      stopLoss: sma[sma.length - 1] * 0.98, // 2% bajo SMA
+      justification: `RSI: ${rsi[rsi.length - 1].toFixed(2)}, MACD: ${macd[macd.length - 1].histogram.toFixed(4)}`,
+    }],
+    historicalData: rawData,
+    indicators: { rsi, macd, sma }, // Para usar en gráficos
   };
 }
 

@@ -29,4 +29,9 @@ export interface TechnicalAnalysisData {
   signals?: Signal[];
   recommendation?: string;
   historicalData?: Array<{ time: number; value: number }>; // Para gráficos
+  indicators?: {
+    rsi: number[];
+    macd: Array<{ histogram: number }>;
+    sma: number[];
+  };
 }

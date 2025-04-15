@@ -13,14 +13,23 @@ interface TechnicalAnalysisBlockProps {
 
 export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
   useEffect(() => {
-    const chart = createChart(document.getElementById('chart-container'), {
-      width: '100%',
-      height: 300,
-    });
-    const lineSeries = chart.addLineSeries();
-    lineSeries.setData(data.historicalData || []);
-    return () => chart.remove();
-  }, [data.historicalData]);
+    if (data.historicalData && data.indicators) {
+      const chart = createChart('chart-container', { width: '100%', height: 400 });
+      
+      // Precio
+      const priceSeries = chart.addLineSeries({ color: '#2962FF' });
+      priceSeries.setData(data.historicalData.map(d => ({ time: d.time / 1000, value: d.value })));
+
+      // SMA
+      const smaSeries = chart.addLineSeries({ color: '#FF6D00', lineWidth: 2 });
+      smaSeries.setData(data.historicalData.slice(-data.indicators.sma.length).map((d, i) => ({
+        time: d.time / 1000,
+        value: data.indicators.sma[i],
+      })));
+
+      return () => chart.remove();
+    }
+  }, [data]);
 
   return (
     <Card className="mt-4 border-border">
@@ -54,7 +63,33 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
         {/* Signal Card */}
         {data.signals && <SignalCard signal={data.signals[0]} />}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          {data.indicators?.rsi && (
+            <div className="bg-background p-3 rounded-md">
+              <h4 className="font-medium">RSI (14):</h4>
+              <p>{data.indicators.rsi[data.indicators.rsi.length - 1].toFixed(2)}</p>
+            </div>
+          )}
+          {data.indicators?.macd && (
+            <div className="bg-background p-3 rounded-md">
+              <h4 className="font-medium">MACD:</h4>
+              <p>{data.indicators.macd[data.indicators.macd.length - 1].histogram.toFixed(4)}</p>
+            </div>
+          )}
+          {data.indicators?.sma && (
+            <div className="bg-background p-3 rounded-md">
+              <h4 className="font-medium">SMA (20):</h4>
+              <p>{data.indicators.sma[data.indicators.sma.length - 1].toFixed(4)}</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
+}
+
+function calculateIndicators(data: Array<{ value: number }>) {
+  if (data.length < 26) throw new Error('Se requieren al menos 26 períodos');
+  // ... cálculos
 }
