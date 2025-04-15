@@ -35,7 +35,9 @@ type AllowedTools =
   | 'createDocument'
   | 'updateDocument'
   | 'requestSuggestions'
-  | 'getWeather';
+  | 'getWeather'
+  | 'calculatePipValue'
+  | 'fetchFxRates';
 
 const blocksTools: AllowedTools[] = [
   'createDocument',
@@ -45,7 +47,9 @@ const blocksTools: AllowedTools[] = [
 
 const weatherTools: AllowedTools[] = ['getWeather'];
 
-const allTools: AllowedTools[] = [...blocksTools, ...weatherTools];
+const forexTools: AllowedTools[] = ['calculatePipValue', 'fetchFxRates'];
+
+const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexTools];
 
 const analysisPrompt = `
 Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, genera un análisis financiero con la siguiente estructura:
@@ -100,9 +104,13 @@ export async function POST(request: Request) {
 
   const streamingData = new StreamData();
 
+  const system = systemPrompt(
+    messages.some(m => m.content.includes('forex')) ? 'forex' : 'blocks'
+  );
+
   const result = await streamText({
     model: customModel(model.apiIdentifier),
-    system: systemPrompt,
+    system,
     messages: coreMessages,
     maxSteps: 5,
     experimental_activeTools: allTools,
@@ -333,6 +341,26 @@ export async function POST(request: Request) {
             title: document.title,
             message: 'Suggestions have been added to the document',
           };
+        },
+      },
+      calculatePipValue: {
+        description: 'Calcula el valor de un pip para un par de divisas y tamaño de lote.',
+        parameters: z.object({
+          pair: z.string().describe('Par de divisas, ej: EUR/USD'),
+          lotSize: z.number().describe('Tamaño del lote (1 lote = 100,000 unidades)'),
+        }),
+        execute: async ({ pair, lotSize }) => {
+          const pipValue = lotSize * 10;
+          return { pair, pipValue };
+        },
+      },
+      fetchFxRates: {
+        description: 'Obtiene tasas de cambio en tiempo real para un par de divisas.',
+        parameters: z.object({
+          pair: z.string().describe('Par de divisas, ej: GBP/JPY'),
+        }),
+        execute: async ({ pair }) => {
+          return { pair, rate: 1.25, change: '+0.02%' };
         },
       },
     },

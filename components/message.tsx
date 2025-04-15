@@ -14,6 +14,7 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
+import { ForexToolResult } from './forex-tool-result';
 
 export const PreviewMessage = ({
   chatId,
@@ -62,6 +63,10 @@ export const PreviewMessage = ({
 
                 if (state === 'result') {
                   const { result } = toolInvocation;
+
+                  if (toolName === 'calculatePipValue') {
+                    return <ForexToolResult result={result} />;
+                  }
 
                   return (
                     <div key={toolCallId}>
