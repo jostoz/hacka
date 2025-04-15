@@ -1,0 +1,9 @@
+{
+    "build": {
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "installCommand": "pnpm install --frozen-lockfile",  // Bloquea versiones
+      "nodeVersion": "20"  // Usa Node.js LTS
+    }
+  }
