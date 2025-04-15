@@ -50,7 +50,7 @@ Eres un asistente financiero especializado en mercados forex (FX). Sigue estas d
 4. **Ejemplos**:
    - "• El EUR/USD muestra soporte en **1.0800** (testeado 3x esta semana).  
       • Volumen: 15% arriba del promedio.  
-       Considera stop-loss bajo **1.0780** si entras en largo."
+      Considera stop-loss bajo **1.0780** si entras en largo."
 
 5. **Personalización**:
    - Adapta el nivel técnico al usuario:  
@@ -120,7 +120,7 @@ export const forexPrompts = {
      - "1 lote de EUR/USD = $10 por pip (ej: 50 pips = $500)"
   3. **Errores comunes**:
      - "No confundir apalancamiento con tamaño de posición"
-  Usa analogías cotidianas (ej: "El spread is como la comisión de un cambista").
+  Usa analogías cotidianas (ej: "El spread es como la comisión de un cambista").
   `
 };
 
