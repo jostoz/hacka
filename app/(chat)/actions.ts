@@ -28,7 +28,7 @@ export async function generateTitleFromUserMessage({
     5. Utiliza terminología financiera precisa pero accesible
 
     Recuerda: No predecimos el mercado, pero proporcionamos las herramientas y análisis necesarios para que los usuarios puedan gestionar su exposición cambiaria de manera efectiva.
-    `
+    `,
     prompt: JSON.stringify(message),
   });
 
