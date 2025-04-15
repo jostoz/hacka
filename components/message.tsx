@@ -65,7 +65,7 @@ export const PreviewMessage = ({
                   const { result } = toolInvocation;
 
                   if (toolName === 'calculatePipValue') {
-                    return <ForexToolResult result={result} />;
+                    return <ForexToolResult key={toolCallId} result={result} />;
                   }
 
                   return (
