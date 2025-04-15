@@ -29,7 +29,6 @@ export async function generateTitleFromUserMessage({
 
     Recuerda: No predecimos el mercado, pero proporcionamos las herramientas y análisis necesarios para que los usuarios puedan gestionar su exposición cambiaria de manera efectiva.
     `,
-    `,
     prompt: JSON.stringify(message),
   });
 
