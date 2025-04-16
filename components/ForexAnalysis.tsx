@@ -80,7 +80,7 @@ export function ForexAnalysis() {
       return data as MarketData;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError('Error al obtener datos: ' + errorMessage);
+      setError(`Error al obtener datos: ${errorMessage}`);
       throw err;
     }
   };
@@ -97,7 +97,7 @@ export function ForexAnalysis() {
       setSignal(tradingSignal as ToolResult<ForexToolSignal>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError('Error al generar señal: ' + errorMessage);
+      setError(`Error al generar señal: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export function ForexAnalysis() {
       setForecast(forecastData as ToolResult<ForexToolForecast>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError('Error al generar pronóstico: ' + errorMessage);
+      setError(`Error al generar pronóstico: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export function ForexAnalysis() {
       setTechnicalAnalysis(analysis as ToolResult<ForexToolTechnicalAnalysis>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError('Error en análisis técnico: ' + errorMessage);
+      setError(`Error en análisis técnico: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -173,7 +173,7 @@ export function ForexAnalysis() {
             min="10"
             max="1000"
             value={config.periods}
-            onChange={(e) => setConfig({ ...config, periods: parseInt(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, periods: Number.parseInt(e.target.value) })}
           />
         </div>
 
@@ -185,7 +185,7 @@ export function ForexAnalysis() {
             min="100"
             step="100"
             value={config.capital}
-            onChange={(e) => setConfig({ ...config, capital: parseInt(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, capital: Number.parseInt(e.target.value) })}
           />
         </div>
 
@@ -198,7 +198,7 @@ export function ForexAnalysis() {
             max="10"
             step="0.1"
             value={config.riskPercent}
-            onChange={(e) => setConfig({ ...config, riskPercent: parseFloat(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, riskPercent: Number.parseFloat(e.target.value) })}
           />
         </div>
 

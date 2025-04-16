@@ -1,4 +1,4 @@
-import { TechnicalAnalysisData, QuantSignal } from '@/lib/types/types';
+import type { TechnicalAnalysisData, QuantSignal } from '@/lib/types/types';
 
 export interface ForexState {
   currentPair: string;

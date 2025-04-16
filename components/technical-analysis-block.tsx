@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { type TechnicalAnalysisData } from '@/lib/types/types';
+import type { TechnicalAnalysisData } from '@/lib/types/types';
 import { SignalCard } from './SignalCard';
 import { 
   createChart, 
@@ -10,8 +10,7 @@ import {
   LineSeries, 
   HistogramSeries,
   ColorType,
-  Time,
-  UTCTimestamp
+  type Time,
 } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
 
@@ -128,8 +127,11 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       <CardContent>
         <div ref={chartContainerRef} className="mb-4" />
         <div className="space-y-4">
-          {data.signals.map((signal, index) => (
-            <SignalCard key={index} signal={signal} />
+          {data.signals.map((signal) => (
+            <SignalCard 
+              key={`${signal.pair}-${signal.signal}-${signal.confidence}-${signal.stopLoss}`} 
+              signal={signal} 
+            />
           ))}
           <div className="mt-4">
             <h4 className="text-md font-medium mb-2">Indicators Summary</h4>

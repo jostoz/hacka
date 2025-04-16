@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { BaseTool } from '@/lib/types/types';
-import { RSI, MACD, SMA } from 'technicalindicators';
 
 // --- Herramientas de Clima ---
 async function fetchWeatherFromAPI(location: string) {

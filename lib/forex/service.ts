@@ -1,5 +1,5 @@
-import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
-import { TIMEFRAMES, FOREX_PAIRS, ForexPair, Timeframe, isValidForexPair, isValidTimeframe } from './constants';
+import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
+import { isValidForexPair, isValidTimeframe } from './constants';
 
 // Mock API endpoint - replace with actual API in production
 const API_BASE_URL = process.env.FOREX_API_URL || 'https://api.example.com/forex';
@@ -61,7 +61,7 @@ export async function calculateSignal(config: ForexConfig, data: FxData[]): Prom
   // This is a placeholder implementation
   const lastPrice = data[data.length - 1].close;
   const signal: QuantSignal = {
-    pair: config.pair.base + '/' + config.pair.quote,
+    pair: `${config.pair.base}/${config.pair.quote}`,
     signal: 'hold',
     confidence: 0.5,
     positionSize: (config.capital * (config.riskPercentage / 100)) / (lastPrice * 0.01),

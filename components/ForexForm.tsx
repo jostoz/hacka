@@ -73,7 +73,7 @@ export function ForexForm() {
 
       // Dependiendo del tipo de análisis solicitado
       switch (type) {
-        case 'signal':
+        case 'signal': {
           const tradingSignal = await forexTools.calculate_quant_signal.execute({
             data: marketData.data,
             capital: config.capital,
@@ -91,8 +91,9 @@ export function ForexForm() {
             justification: `Señal generada basada en análisis cuantitativo para ${config.pair} en timeframe ${config.timeframe}`
           });
           break;
+        }
 
-        case 'forecast':
+        case 'forecast': {
           const forecastData = await forexTools.get_simple_forecast.execute({
             data: marketData.data
           });
@@ -105,13 +106,15 @@ export function ForexForm() {
             timestamp: new Date().toISOString()
           });
           break;
+        }
 
-        case 'technical':
+        case 'technical': {
           const analysis = await forexTools.fetchTechnicalAnalysis.execute({
             pair: config.pair
           });
           setTechnicalAnalysis(analysis.data as TechnicalAnalysisData);
           break;
+        }
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -160,7 +163,7 @@ export function ForexForm() {
             min="10"
             max="1000"
             value={config.periods}
-            onChange={(e) => setConfig({ ...config, periods: parseInt(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, periods: Number.parseInt(e.target.value) })}
           />
         </div>
 
@@ -172,7 +175,7 @@ export function ForexForm() {
             min="100"
             step="100"
             value={config.capital}
-            onChange={(e) => setConfig({ ...config, capital: parseInt(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, capital: Number.parseInt(e.target.value) })}
           />
         </div>
 
@@ -185,7 +188,7 @@ export function ForexForm() {
             max="10"
             step="0.1"
             value={config.riskPercent}
-            onChange={(e) => setConfig({ ...config, riskPercent: parseFloat(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, riskPercent: Number.parseFloat(e.target.value) })}
           />
         </div>
 

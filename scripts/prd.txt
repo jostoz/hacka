@@ -1,0 +1,33 @@
+Project Requirements Document
+
+Project Name: Hacka
+Description: Aplicación de análisis forex con integración de AI
+
+Objetivos Principales:
+1. Implementar análisis técnico de forex
+2. Integrar herramientas de AI para análisis predictivo
+3. Desarrollar interfaz de usuario moderna y responsive
+4. Asegurar tipado estricto y manejo de errores robusto
+
+Funcionalidades Clave:
+- Análisis técnico de pares de divisas
+- Predicciones basadas en AI
+- Visualización de datos en tiempo real
+- Manejo de estado global
+- Sistema de notificaciones
+- Integración con APIs externas
+
+Requerimientos Técnicos:
+- TypeScript con tipado estricto
+- Next.js para el frontend
+- Manejo de estado con hooks personalizados
+- Tests automatizados
+- CI/CD pipeline
+- Documentación técnica
+
+Entregables:
+1. Aplicación web funcional
+2. Documentación del código
+3. Tests unitarios y de integración
+4. Pipeline de CI/CD configurado
+5. Manual de usuario 

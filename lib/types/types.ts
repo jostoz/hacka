@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { CoreToolMessage as AICoreToolMessage } from 'ai';
+import type { z } from 'zod';
+import type { CoreToolMessage as AICoreToolMessage } from 'ai';
 
 // Message types
 export type MessageType = 

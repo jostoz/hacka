@@ -4,8 +4,6 @@ import {
   convertToCoreMessages,
   streamObject,
   streamText,
-  CoreMessage,
-  type CoreAssistantMessage,
   type CoreToolMessage,
 } from 'ai';
 import { z } from 'zod';
@@ -27,13 +25,11 @@ import type { Suggestion } from '@/lib/db/schema';
 import {
   generateUUID,
   getMostRecentUserMessage,
-  sanitizeResponseMessages,
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../actions';
-import { tools } from '@/lib/tools';
 import { forexTools } from '@/lib/tools/forex';
-import { type ToolResultPart, type ToolResult, type FxData, type QuantSignal, type Forecast } from '@/lib/types/types';
+import type { ToolResultPart, } from '@/lib/types/types';
 
 export const maxDuration = 60;
 

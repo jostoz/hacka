@@ -1,4 +1,4 @@
-import { Signal, Forecast, TechnicalAnalysisData, FxData } from '../types/types';
+import type { Signal, Forecast, TechnicalAnalysisData, FxData } from '../types/types';
 
 // Re-export common types
 export type { Signal, Forecast, TechnicalAnalysisData, FxData };

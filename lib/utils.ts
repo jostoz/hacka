@@ -256,7 +256,7 @@ export function getMessageIdFromAnnotations(message: Message) {
   return annotation.messageIdFromServer || message.id;
 }
 
-export const formatForexNumber = (value: number, decimals: number = 4) => {
+export const formatForexNumber = (value: number, decimals = 4) => {
   return value.toFixed(decimals);
 };
 

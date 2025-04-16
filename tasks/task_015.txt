@@ -1,0 +1,11 @@
+# Task ID: 15
+# Title: Create User Manual
+# Status: pending
+# Dependencies: 11, 12, 13
+# Priority: low
+# Description: Develop comprehensive user guide for the forex analysis application
+# Details:
+Create user manual with screenshots and step-by-step instructions. Document all features and their usage. Add troubleshooting section for common issues. Create FAQ section. Ensure manual is accessible and available within the application.
+
+# Test Strategy:
+Review manual with test users for clarity and completeness. Verify all features are documented correctly. Test in-app access to manual.

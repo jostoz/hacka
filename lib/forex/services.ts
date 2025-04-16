@@ -1,4 +1,4 @@
-import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
+import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
 
 // API endpoint for forex data
 const FOREX_API_ENDPOINT = process.env.FOREX_API_ENDPOINT || 'https://api.example.com/forex';

@@ -15,10 +15,7 @@ import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
 import { ForexToolResult } from './ForexToolResult';
-import { Chart } from './Chart';
-import { Table } from './Table';
 import { TechnicalAnalysisBlock } from './technical-analysis-block';
-import { Card } from '@/components/ui/card';
 
 export const PreviewMessage = ({
   chatId,

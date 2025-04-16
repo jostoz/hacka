@@ -1,6 +1,6 @@
 // components/SignalCard.tsx
 import { Button } from '@/components/ui/button';
-import { type Signal } from '@/lib/types/types'; // Importar el tipo consolidado
+import type { Signal } from '@/lib/types/types'; // Importar el tipo consolidado
 
 interface SignalCardProps {
     /**

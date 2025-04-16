@@ -1,10 +1,8 @@
 // lib/tools/forex.ts
 import { z } from 'zod';
-import { BaseTool, FxData, QuantSignal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
+import type { BaseTool, FxData, QuantSignal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
 import { RSI, MACD, SMA } from 'technicalindicators';
-import { FOREX_PAIRS, TIMEFRAMES } from '@/lib/forex/constants';
-import { ForexConfig, ForexResponse, ForexError } from '../forex/types';
-import { ForexPair, Timeframe, isValidForexPair, isValidTimeframe } from '../forex/constants';
+import { isValidForexPair, isValidTimeframe } from '../forex/constants';
 
 // Tipos de datos
 interface MACDResult {
