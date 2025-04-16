@@ -71,9 +71,6 @@ importers:
       diff-match-patch:
         specifier: ^1.0.5
         version: 1.0.5
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.5.0
       drizzle-orm:
         specifier: ^0.34.0
         version: 0.34.1(@neondatabase/serverless@0.9.5)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@18.3.20)(@vercel/postgres@0.10.0)(postgres@3.4.5)(react@18.2.0)
@@ -189,6 +186,9 @@ importers:
       '@types/react-dom':
         specifier: ^18
         version: 18.3.6(@types/react@18.3.20)
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
       drizzle-kit:
         specifier: ^0.25.0
         version: 0.25.0
