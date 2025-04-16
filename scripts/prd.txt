@@ -1,33 +1,143 @@
-Project Requirements Document
+# Project Requirements Document v2
 
-Project Name: Hacka
-Description: Aplicación de análisis forex con integración de AI
+## Project Name: Hacka
+**Description**: Plataforma avanzada de trading y análisis forex con integración de IA y capacidades de análisis técnico en tiempo real.
 
-Objetivos Principales:
-1. Implementar análisis técnico de forex
-2. Integrar herramientas de AI para análisis predictivo
-3. Desarrollar interfaz de usuario moderna y responsive
-4. Asegurar tipado estricto y manejo de errores robusto
+## Objetivos Principales
+1. Proporcionar análisis técnico avanzado de mercados forex usando múltiples fuentes de datos
+2. Integrar IA para asistencia en trading y análisis predictivo
+3. Ofrecer una interfaz moderna con visualizaciones en tiempo real
+4. Mantener alta calidad de código con TypeScript estricto
+5. Implementar sistema robusto de gestión de datos financieros
 
-Funcionalidades Clave:
-- Análisis técnico de pares de divisas
-- Predicciones basadas en AI
-- Visualización de datos en tiempo real
-- Manejo de estado global
-- Sistema de notificaciones
-- Integración con APIs externas
+## Stack Tecnológico
+### Frontend
+- Next.js 15.x con App Router
+- React 18.x
+- TypeScript estricto
+- Tailwind CSS + Radix UI
+- Chart.js y Lightweight Charts para visualizaciones
 
-Requerimientos Técnicos:
-- TypeScript con tipado estricto
-- Next.js para el frontend
-- Manejo de estado con hooks personalizados
-- Tests automatizados
-- CI/CD pipeline
-- Documentación técnica
+### Backend y Datos
+- Vercel Postgres + Drizzle ORM
+- APIs de trading (Capital.com, Yahoo Finance)
+- Sistema de caché con SWR
+- Autenticación con NextAuth.js
 
-Entregables:
-1. Aplicación web funcional
-2. Documentación del código
-3. Tests unitarios y de integración
-4. Pipeline de CI/CD configurado
-5. Manual de usuario 
+### IA y Análisis
+- OpenAI SDK para análisis predictivo
+- Biblioteca TechnicalIndicators para análisis técnico
+- Integración con múltiples proveedores de datos
+
+## Funcionalidades Clave
+
+### 1. Análisis de Mercado
+- Visualización de charts en tiempo real
+- Indicadores técnicos avanzados
+- Múltiples timeframes
+- Análisis fundamental integrado
+
+### 2. Integración con IA
+- Asistente de trading basado en IA
+- Análisis predictivo de tendencias
+- Procesamiento de datos históricos
+- Recomendaciones personalizadas
+
+### 3. Gestión de Trading
+- Conexión con broker (Capital.com)
+- Seguimiento de posiciones
+- Gestión de riesgo automatizada
+- Alertas y notificaciones
+
+### 4. Interfaz de Usuario
+- Dashboard personalizable
+- Modo oscuro/claro
+- Componentes interactivos avanzados
+- Diseño responsive
+
+## Requerimientos Técnicos
+
+### Desarrollo
+- Tipado estricto con TypeScript
+- Manejo de errores robusto y tipado
+- Testing automatizado
+- Documentación inline del código
+
+### Seguridad
+- Autenticación segura
+- Manejo seguro de API keys
+- Encriptación de datos sensibles
+- Validación de datos con Zod
+
+### Performance
+- Optimización de renders
+- Caching estratégico con SWR
+- Lazy loading de componentes
+- Optimización de consultas a DB
+
+## Integraciones Externas
+1. Capital.com API
+   - Trading en vivo
+   - Datos de mercado
+   - Gestión de cuenta
+
+2. Yahoo Finance
+   - Datos históricos
+   - Información fundamental
+   - Noticias de mercado
+
+3. Banxico API
+   - Datos económicos locales
+   - Tipos de cambio oficiales
+
+## Entregables
+
+### Fase 1: Infraestructura Base
+- Setup inicial de Next.js
+- Configuración de base de datos
+- Integración de autenticación
+- Sistema de estilos y componentes
+
+### Fase 2: Funcionalidades Core
+- Sistema de charts
+- Integración con brokers
+- Panel de análisis técnico
+- Sistema de alertas
+
+### Fase 3: Integración de IA
+- Implementación de asistente IA
+- Análisis predictivo
+- Recomendaciones automatizadas
+
+### Fase 4: Optimización y Lanzamiento
+- Testing exhaustivo
+- Optimización de performance
+- Documentación completa
+- Despliegue a producción
+
+## Métricas de Éxito
+1. Tiempo de respuesta < 200ms para operaciones críticas
+2. 99.9% de uptime
+3. Precisión > 85% en predicciones de IA
+4. Cobertura de tests > 80%
+
+## Consideraciones Técnicas
+- Manejo de estado distribuido
+- Arquitectura modular y escalable
+- Sistema de logging robusto
+- Backups automáticos de datos
+
+## Documentación
+1. Documentación técnica
+2. API documentation
+3. Manual de usuario
+4. Guías de contribución
+5. Documentación de arquitectura
+
+## Timeline Estimado
+- Fase 1: 2 semanas
+- Fase 2: 4 semanas
+- Fase 3: 3 semanas
+- Fase 4: 2 semanas
+
+Total: 11 semanas 

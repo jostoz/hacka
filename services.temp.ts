@@ -1,4 +1,4 @@
-import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
+﻿import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
 import { ForexApplicationError } from '../errors/ForexApplicationError';
 
 // API endpoint for forex data
@@ -39,52 +39,32 @@ export async function getFxData(
 /**
  * Calculates trading signals based on historical data and risk parameters
  */
-export function calculateSignal(
-  historicalData: FxData[], 
-  pair = 'EUR/USD',
-  accountBalance = 10000,
-  riskPercentage = 1
-): ForexResponse<Signal> {
+export function calculateSignal(historicalData: FxData[], riskPercentage = 1): Signal {
   if (!historicalData?.length) {
-    return {
-      success: false,
-      error: {
-        message: 'No historical data provided',
-        code: 'INSUFFICIENT_DATA'
-      }
-    };
+    throw new ForexApplicationError('No historical data provided');
   }
 
   try {
+    const accountBalance = 10000; // Valor ejemplo, podrÃ­a venir como parÃ¡metro
     const riskAmount = (accountBalance * riskPercentage) / 100;
     const lastPrice = historicalData[historicalData.length - 1].close;
     
-    // Aquí iría la lógica de cálculo de señales
+    // AquÃ­ irÃ­a la lÃ³gica de cÃ¡lculo de seÃ±ales
     const signal: Signal = {
-      pair,
+      pair: 'EUR/USD', // Este valor deberÃ­a venir como parÃ¡metro
       signal: 'buy',
       confidence: 0.75,
-      positionSize: riskAmount / (lastPrice * 0.01), // Calculamos el tamaño de la posición basado en el riesgo
+      positionSize: riskAmount / (lastPrice * 0.01), // Calculamos el tamaÃ±o de la posiciÃ³n basado en el riesgo
       stopLoss: lastPrice * 0.99,
       takeProfit: lastPrice * 1.02,
-      justification: 'Señal basada en análisis técnico y gestión de riesgo',
+      justification: 'SeÃ±al basada en anÃ¡lisis tÃ©cnico y gestiÃ³n de riesgo',
       type: 'technical',
       value: lastPrice
     };
 
-    return {
-      success: true,
-      data: signal
-    };
+    return signal;
   } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: error instanceof Error ? error.message : 'Error calculating signal',
-        code: 'CALCULATION_ERROR',
-        details: error
-      }
-    };
+    throw new ForexApplicationError('Error calculating signal', error);
   }
 }
 
