@@ -47,4 +47,13 @@ export const TECHNICAL_ANALYSIS = {
     FAST_PERIODS: 10,
     SLOW_PERIODS: 20
   }
-} as const; 
+} as const;
+
+// Also add some useful type guards
+export const isValidForexPair = (pair: string): pair is ForexPair => {
+  return FOREX_PAIRS.includes(pair as ForexPair);
+};
+
+export const isValidTimeframe = (timeframe: string): timeframe is Timeframe => {
+  return TIMEFRAMES.includes(timeframe as Timeframe);
+}; 
