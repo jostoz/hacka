@@ -1,5 +1,4 @@
 import type { FxData, Signal, Forecast, TechnicalAnalysisData, ForexResponse } from './types';
-import { ForexApplicationError } from '../errors/ForexApplicationError';
 
 // API endpoint for forex data
 const FOREX_API_ENDPOINT = process.env.FOREX_API_ENDPOINT || 'https://api.example.com/forex';

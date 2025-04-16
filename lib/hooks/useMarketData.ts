@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { MarketDataFactory } from '@/lib/services/market-data/factory';
 import type { 
   MarketDataParams, 
-  MarketDataResult, 
   MarketDataResponse 
 } from '@/lib/types/market-data';
 

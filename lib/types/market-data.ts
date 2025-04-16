@@ -1,5 +1,4 @@
 import type { FxData } from './types';
-import { z } from 'zod';
 
 export type MarketDataSource = 'yahoo' | 'capital' | 'polygon';
 

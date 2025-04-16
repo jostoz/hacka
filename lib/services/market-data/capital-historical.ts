@@ -1,4 +1,4 @@
-import type { CapitalResolution, CapitalHistoricalDataParams, CapitalTimeframe } from '../../types/market-data';
+import type { CapitalResolution, CapitalHistoricalDataParams, } from '../../types/market-data';
 import { ForexApplicationError } from '../../types/errors';
 import { CAPITAL_TIMEFRAMES } from '../../config/timeframes';
 
