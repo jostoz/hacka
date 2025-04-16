@@ -67,8 +67,8 @@ export class CapitalAuthService {
             }
 
             this.session = {
-                cst,
-                securityToken,
+                CST: cst,
+                X_SECURITY_TOKEN: securityToken,
                 expires: Date.now() + 4 * 60 * 60 * 1000 // 4 hours
             };
         } catch (error) {
@@ -92,8 +92,8 @@ export class CapitalAuthService {
         }
 
         return {
-            'X-SECURITY-TOKEN': this.session.securityToken,
-            'CST': this.session.cst,
+            'X-SECURITY-TOKEN': this.session.X_SECURITY_TOKEN,
+            'CST': this.session.CST,
             'X-CAP-API-KEY': this.config?.apiKey || '',
         };
     }
