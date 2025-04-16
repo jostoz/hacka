@@ -74,6 +74,10 @@ interface FunctionCall {
   arguments: string;
 }
 
+interface ToolCallMessage extends CoreToolMessage {
+  function_call: FunctionCall;
+}
+
 interface ToolMessage {
   role: 'tool';
   function_call: FunctionCall;
@@ -372,25 +376,23 @@ export async function POST(request: Request) {
     onFinish: async ({ responseMessages }) => {
       if (session.user?.id) {
         try {
-          const toolCalls = responseMessages.filter((m): m is CoreToolMessage => 
-            m.role === 'tool'
+          const toolCalls = responseMessages.filter((m): m is ToolCallMessage => 
+            m.role === 'tool' && 'function_call' in m
           );
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              if ('function_call' in toolCall) {
-                const { name: toolName, arguments: argsString } = toolCall.function_call;
+              const { name: toolName, arguments: argsString } = toolCall.function_call;
+              
+              if (toolName in forexTools) {
+                const typedToolName = toolName as keyof typeof forexTools;
+                const args = JSON.parse(argsString);
+                const result = await forexTools[typedToolName].function(args);
                 
-                if (toolName in forexTools) {
-                  const typedToolName = toolName as keyof typeof forexTools;
-                  const args = JSON.parse(argsString);
-                  const result = await forexTools[typedToolName].function(args);
-                  
-                  responseMessages.push({
-                    role: "tool",
-                    content: JSON.stringify(result)
-                  } as CoreToolMessage);
-                }
+                responseMessages.push({
+                  role: "tool",
+                  content: JSON.stringify(result)
+                } as CoreToolMessage);
               }
             }
           }
