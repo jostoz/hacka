@@ -396,7 +396,11 @@ export async function POST(request: Request) {
                 
                 responseMessages.push({
                   role: "tool",
-                  content: JSON.stringify(result)
+                  content: [{
+                    type: 'tool-result',
+                    toolCallId: toolCall.function_call.name,
+                    result: result
+                  }]
                 } as CoreToolMessage);
               }
             }
