@@ -112,7 +112,8 @@ export const forexPrompts = {
   `
 };
 
-const detectContext = (userMessage: string): keyof typeof forexPrompts | 'blocks' | 'default' => {
+const detectContext = (userMessage: string | null): keyof typeof forexPrompts | 'blocks' | 'default' => {
+  if (!userMessage) return 'default';
   if (userMessage.includes('document')) return 'blocks';
   if (userMessage.match(/RSI|MACD|media móvil/i)) return 'technical';
   if (userMessage.match(/lote|pips|riesgo|balance/i)) return 'risk';
@@ -122,7 +123,7 @@ const detectContext = (userMessage: string): keyof typeof forexPrompts | 'blocks
   return 'default';
 };
 
-export const systemPrompt = (userMessage: string) => {
+export const systemPrompt = (userMessage: string | null) => {
   const context = detectContext(userMessage);
   return context === 'default' 
     ? regularPrompt

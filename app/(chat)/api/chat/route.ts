@@ -106,13 +106,16 @@ export async function POST(request: Request) {
 
   const streamingData = new StreamData();
 
-  const system = systemPrompt(
-    messages.some(m => m.content.includes('forex')) ? 'forex' : 'blocks'
-  );
-
   const result = await streamText({
     model: customModel(model.apiIdentifier),
-    system: systemPrompt(userMessage.content),
+    system: systemPrompt(
+      Array.isArray(userMessage.content) 
+        ? userMessage.content
+            .filter(part => typeof part === 'string' || 'text' in part)
+            .map(part => typeof part === 'string' ? part : part.text)
+            .join(' ')
+        : userMessage.content
+    ),
     messages: coreMessages,
     maxSteps: 5,
     experimental_activeTools: allTools,
