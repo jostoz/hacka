@@ -1,100 +1,186 @@
 import yahooFinance from 'yahoo-finance2';
-import { BaseMarketDataService } from './base';
 import type { 
-  MarketDataParams, 
-  MarketDataResult, 
-  TimeRange 
+    MarketDataProvider, 
+    MarketDataParams, 
+    MarketDataResult,
+    MarketDataResponse,
+    TimeInterval,
+    TimeRange,
+    OHLCV
 } from '@/lib/types/market-data';
+import { BaseMarketDataService } from './base';
+import { validateHistoricalDataParams, validateOHLCVData, calculateReturns, calculateVolatility } from '@/lib/utils/market-data';
 
-export class YahooFinanceService extends BaseMarketDataService {
-  readonly id = 'yahoo' as const;
-  readonly name = 'Yahoo Finance';
+interface YahooQueryOptions {
+    period1: Date;
+    period2: Date;
+    interval: '1d' | '1mo' | '1wk';
+}
 
-  async fetchData(params: MarketDataParams): Promise<MarketDataResult> {
-    try {
-      this.validateParams(params);
+interface YahooHistoricalRow {
+    date: Date;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number;
+}
 
-      const queryOptions = {
-        period1: this.calculateStartDate(params.range),
-        interval: this.mapInterval(params.interval),
-      };
+export class YahooFinanceService extends BaseMarketDataService implements MarketDataProvider {
+    public readonly id = 'yahoo' as const;
+    public readonly name = 'Yahoo Finance';
 
-      const result = await yahooFinance.historical(params.symbol, queryOptions);
-      
-      if (!result || result.length === 0) {
-        return {
-          success: false,
-          error: {
-            code: 'NO_DATA',
-            message: 'No se encontraron datos para los parámetros especificados'
-          }
-        };
-      }
+    private readonly INTERVAL_MAP: Record<TimeInterval, '1d' | '1mo' | '1wk'> = {
+        '1m': '1d',
+        '5m': '1d',
+        '15m': '1d',
+        '30m': '1d',
+        '1h': '1d',
+        '4h': '1d',
+        '1d': '1d',
+        '1w': '1wk'
+    } as const;
 
-      return {
-        success: true,
-        data: {
-          data: result.map(candle => ({
-            timestamp: new Date(candle.date).getTime(),
-            open: candle.open,
-            high: candle.high,
-            low: candle.low,
-            close: candle.close,
-            volume: candle.volume || 0
-          })),
-          metadata: {
-            symbol: params.symbol,
-            interval: params.interval,
-            lastUpdated: Date.now(),
-            timezone: 'UTC',
-            currency: this.detectCurrency(params.symbol)
-          }
+    private readonly MAX_BARS = 2000;
+    private readonly MIN_BARS = 2;
+
+    public async fetchData(params: MarketDataParams): Promise<MarketDataResult> {
+        try {
+            // Validate input parameters
+            const validationResult = validateHistoricalDataParams(params);
+            if (validationResult === null) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'INVALID_PARAMS',
+                        message: 'Invalid parameters'
+                    }
+                };
+            }
+
+            const { symbol, interval, range } = params;
+            const queryOptions = await this.buildQueryOptions(interval, range);
+
+            // Fetch historical data
+            const result = await yahooFinance.historical(symbol, {
+                ...queryOptions,
+                events: 'history',
+                includeAdjustedClose: true
+            }) as YahooHistoricalRow[];
+            
+            if (!result || result.length === 0) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'NO_DATA',
+                        message: `No data found for symbol ${symbol}`
+                    }
+                };
+            }
+
+            // Transform and validate data
+            const ohlcvData = this.transformToOHLCV(result);
+            const isValidData = validateOHLCVData(ohlcvData);
+            
+            if (isValidData === null) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'INVALID_DATA',
+                        message: 'Invalid OHLCV data structure'
+                    }
+                };
+            }
+
+            // Calculate additional metrics
+            const enrichedData = this.enrichData(ohlcvData);
+
+            const response: MarketDataResponse = {
+                data: enrichedData.map(candle => ({
+                    ...candle,
+                    volume: candle.volume || 0
+                })),
+                metadata: {
+                    symbol,
+                    interval,
+                    lastUpdated: Date.now(),
+                    timezone: 'UTC',
+                    currency: this.detectCurrency(symbol)
+                }
+            };
+
+            return {
+                success: true,
+                data: response
+            };
+
+        } catch (error: unknown) {
+            return {
+                success: false,
+                error: {
+                    code: 'YAHOO_API_ERROR',
+                    message: error instanceof Error ? error.message : 'Unknown error occurred'
+                }
+            };
         }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: this.handleError(error)
-      };
     }
-  }
 
-  private calculateStartDate(range: TimeRange): Date {
-    const now = new Date();
-    switch (range) {
-      case '1d': return new Date(now.setDate(now.getDate() - 1));
-      case '5d': return new Date(now.setDate(now.getDate() - 5));
-      case '1mo': return new Date(now.setMonth(now.getMonth() - 1));
-      case '3mo': return new Date(now.setMonth(now.getMonth() - 3));
-      case '6mo': return new Date(now.setMonth(now.getMonth() - 6));
-      case '1y': return new Date(now.setFullYear(now.getFullYear() - 1));
-      case '2y': return new Date(now.setFullYear(now.getFullYear() - 2));
-      case '5y': return new Date(now.setFullYear(now.getFullYear() - 5));
-      case 'max': return new Date(0);
-      default: return new Date(now.setMonth(now.getMonth() - 1));
+    private async buildQueryOptions(interval: TimeInterval, range: TimeRange): Promise<YahooQueryOptions> {
+        const period2 = new Date();
+        const period1 = this.calculateStartDate(range);
+        
+        return {
+            period1,
+            period2,
+            interval: this.mapInterval(interval)
+        };
     }
-  }
 
-  private mapInterval(interval: string): string {
-    const intervalMap: Record<string, string> = {
-      '1m': '1m',
-      '5m': '5m',
-      '15m': '15m',
-      '30m': '30m',
-      '1h': '60m',
-      '4h': '1h',
-      '1d': '1d',
-      '1w': '1wk',
-      '1mo': '1mo'
-    };
-    return intervalMap[interval] || '1d';
-  }
+    private calculateStartDate(range: TimeRange): Date {
+        const now = new Date();
+        const ranges: Record<TimeRange, number> = {
+            '1d': 1,
+            '5d': 5,
+            '1mo': 30,
+            '3mo': 90,
+            '6mo': 180,
+            '1y': 365,
+            '2y': 730,
+            '5y': 1825,
+            'max': 3650
+        };
 
-  private detectCurrency(symbol: string): string {
-    // Detectar la moneda basado en el símbolo
-    // Por ejemplo: EURUSD = USD, GBPJPY = JPY
-    const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD'];
-    const quote = currencies.find(curr => symbol.endsWith(curr));
-    return quote || 'USD';
-  }
+        const days = ranges[range];
+        return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+
+    private mapInterval(interval: TimeInterval): '1d' | '1mo' | '1wk' {
+        return this.INTERVAL_MAP[interval];
+    }
+
+    private transformToOHLCV(data: YahooHistoricalRow[]): OHLCV[] {
+        return data.map(row => ({
+            timestamp: row.date.getTime(),
+            open: row.open,
+            high: row.high,
+            low: row.low,
+            close: row.close,
+            volume: row.volume
+        }));
+    }
+
+    private enrichData(data: OHLCV[]): OHLCV[] {
+        // Calculate returns
+        const withReturns = calculateReturns(data);
+        
+        // Calculate volatility (20-period by default)
+        const enriched = calculateVolatility(withReturns, 20);
+        
+        return enriched;
+    }
+
+    private detectCurrency(symbol: string): string {
+        const parts = symbol.split('/');
+        return parts.length === 2 ? parts[1] : 'USD';
+    }
 } 
