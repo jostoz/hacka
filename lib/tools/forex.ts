@@ -163,5 +163,19 @@ export const forexTools = {
         data: forecast
       };
     }
+  },
+
+  fetchTechnicalAnalysis: {
+    description: "Realiza análisis técnico de un par de divisas.",
+    parameters: z.object({
+      pair: z.string().describe('Par de divisas, ej: EUR/USD')
+    }),
+    function: async ({ pair }) => {
+      const result = await fetchTechnicalAnalysisFromAPI(pair);
+      return {
+        type: 'technical-analysis',
+        data: result
+      };
+    }
   }
 } satisfies Record<string, BaseTool>;
