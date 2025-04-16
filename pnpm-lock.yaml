@@ -60,7 +60,7 @@ importers:
         specifier: ^4.4.9
         version: 4.4.9
       class-variance-authority:
-        specifier: ^0.7.0
+        specifier: ^0.7.1
         version: 0.7.1
       classnames:
         specifier: ^2.5.1

@@ -87,6 +87,10 @@ export interface TechnicalAnalysisData {
     }>;
     sma: number[];
   };
+  levels?: {
+    support: number;
+    resistance: number;
+  };
   summary: string;
 }
 

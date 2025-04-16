@@ -126,6 +126,15 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
 
   const histogram = lastMacd.histogram || 0;
 
+  // Calculate support and resistance levels
+  const prices = historicalData.map(d => d.close);
+  const maxPrice = Math.max(...prices);
+  const minPrice = Math.min(...prices);
+  const range = maxPrice - minPrice;
+  
+  const support = minPrice + (range * 0.1); // Simple support level
+  const resistance = maxPrice - (range * 0.1); // Simple resistance level
+
   return {
     pair,
     timestamp: Date.now(),
@@ -151,7 +160,11 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
       }),
       sma
     },
-    summary: `Analysis for ${pair} shows ${histogram > 0 ? 'bullish' : 'bearish'} momentum`
+    levels: {
+      support,
+      resistance
+    },
+    summary: `Analysis for ${pair} shows ${histogram > 0 ? 'bullish' : 'bearish'} momentum with key levels at ${support.toFixed(4)} (support) and ${resistance.toFixed(4)} (resistance)`
   };
 }
 
