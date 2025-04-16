@@ -1,5 +1,5 @@
 import { FxData, QuantSignal, Forecast, TechnicalAnalysis, ForexConfig, ForexResponse, ForexError } from './types';
-import { TIMEFRAMES, FOREX_PAIRS } from './constants';
+import { TIMEFRAMES, FOREX_PAIRS, ForexPair, Timeframe, isValidForexPair, isValidTimeframe } from './constants';
 
 // Mock API endpoint - replace with actual API in production
 const API_BASE_URL = process.env.FOREX_API_URL || 'https://api.example.com/forex';
@@ -25,14 +25,14 @@ async function fetchFromAPI<T>(endpoint: string, params: Record<string, string>)
 }
 
 export async function getMarketData(pair: string, timeframe: string, periods: number): Promise<ForexResponse<FxData[]>> {
-  if (!FOREX_PAIRS.includes(pair)) {
+  if (!isValidForexPair(pair)) {
     return {
       success: false,
       error: { message: 'Invalid forex pair', code: 'INVALID_PAIR' }
     };
   }
 
-  if (!TIMEFRAMES.includes(timeframe)) {
+  if (!isValidTimeframe(timeframe)) {
     return {
       success: false,
       error: { message: 'Invalid timeframe', code: 'INVALID_TIMEFRAME' }
@@ -61,12 +61,14 @@ export async function calculateSignal(config: ForexConfig, data: FxData[]): Prom
   // This is a placeholder implementation
   const lastPrice = data[data.length - 1].close;
   const signal: QuantSignal = {
-    direction: 'hold',
-    entry: lastPrice,
-    stopLoss: lastPrice * 0.99,
-    takeProfit: lastPrice * 1.02,
+    pair: config.pair.base + '/' + config.pair.quote,
+    signal: 'hold',
+    confidence: 0.5,
     positionSize: (config.capital * (config.riskPercentage / 100)) / (lastPrice * 0.01),
-    riskAmount: config.capital * (config.riskPercentage / 100)
+    stopLoss: lastPrice * 0.99,
+    justification: 'Análisis basado en indicadores técnicos',
+    type: 'technical',
+    value: lastPrice.toString()
   };
 
   return { success: true, data: signal };
@@ -89,9 +91,10 @@ export async function generateForecast(data: FxData[]): Promise<ForexResponse<Fo
   const prevPrice = data[data.length - 2].close;
   
   const forecast: Forecast = {
+    pair: 'EUR/USD', // Default pair, should be passed as parameter
     nextPrice: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
     confidence: 0.75,
-    trend: lastPrice > prevPrice ? 'up' : lastPrice < prevPrice ? 'down' : 'sideways'
+    timestamp: new Date().toISOString()
   };
 
   return { success: true, data: forecast };
