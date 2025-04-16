@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { MarketDataFactory } from '@/lib/services/market-data/factory';
 import type { 
   MarketDataParams, 
@@ -18,31 +18,70 @@ export function useMarketData(params?: MarketDataParams): UseMarketDataResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    if (!params) {
-      setData(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
+  useEffect(() => {
+    let isMounted = true;
 
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const factory = MarketDataFactory.getInstance();
-      
-      if (!factory.isProviderAvailable(params.source)) {
-        throw new Error(`Proveedor de datos '${params.source}' no disponible`);
+    async function fetchData() {
+      if (!params) {
+        setData(null);
+        setError(null);
+        setIsLoading(false);
+        return;
       }
 
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const factory = MarketDataFactory.getInstance();
+        
+        if (!factory.isProviderAvailable(params.source)) {
+          throw new Error(`Proveedor de datos '${params.source}' no disponible`);
+        }
+
+        const provider = factory.getProvider(params.source);
+        const result = await provider.fetchData(params);
+
+        if (!result.success || !result.data) {
+          throw new Error(result.error?.message || 'Error al obtener datos');
+        }
+
+        if (isMounted) {
+          setData(result.data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Error desconocido');
+          setData(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params?.symbol, params?.interval, params?.range, params?.source]);
+
+  const refetch = async () => {
+    if (!params) return;
+    
+    setIsLoading(true);
+    try {
+      const factory = MarketDataFactory.getInstance();
       const provider = factory.getProvider(params.source);
       const result = await provider.fetchData(params);
-
+      
       if (!result.success || !result.data) {
         throw new Error(result.error?.message || 'Error al obtener datos');
       }
-
+      
       setData(result.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -50,16 +89,12 @@ export function useMarketData(params?: MarketDataParams): UseMarketDataResult {
     } finally {
       setIsLoading(false);
     }
-  }, [params]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  };
 
   return {
     data,
     isLoading,
     error,
-    refetch: fetchData
+    refetch
   };
 } 
