@@ -1,6 +1,6 @@
 // lib/tools/forex.ts
 import { z } from 'zod';
-import type { BaseTool } from './types';
+import type { BaseTool, TechnicalAnalysisData, Signal } from '@/lib/types/types';
 import { RSI, MACD, SMA } from 'technicalindicators';
 
 // Tipos de datos

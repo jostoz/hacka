@@ -28,7 +28,7 @@ import {
 } from '@/lib/utils';
 
 import { generateTitleFromUserMessage } from '../../actions';
-import { tools } from '@/lib/tools/forex';
+import { tools } from '@/lib/tools';
 
 export const maxDuration = 60;
 
@@ -362,10 +362,11 @@ export async function POST(request: Request) {
           pair: z.string().describe('Par de divisas, ej: GBP/JPY'),
         }),
         execute: async ({ pair }) => {
-          return { pair, rate: 1.25, change: '+0.02%' };
+          const forexData = await tools.forex.get_fx_data.function({ pair });
+          return forexData;
         },
       },
-      fetchTechnicalAnalysis: tools.fetchTechnicalAnalysis,
+      fetchTechnicalAnalysis: tools.forex.fetchTechnicalAnalysis,
     },
     tool_choice: "auto",
     onFinish: async ({ responseMessages }) => {
@@ -399,9 +400,9 @@ export async function POST(request: Request) {
           const toolCalls = responseMessages.filter(m => m.role === 'tool');
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              const toolName = toolCall.name as keyof typeof tools;
+              const toolName = toolCall.name as keyof typeof tools.forex;
               const args = JSON.parse(toolCall.content);
-              const result = await tools[toolName].function(args);
+              const result = await tools.forex[toolName].function(args);
               
               responseMessages.push({
                 role: "tool",

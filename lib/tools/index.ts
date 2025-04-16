@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BaseTool } from './types';
+import type { BaseTool } from '@/lib/types/types';
 
 // --- Herramientas de Clima ---
 async function fetchWeatherFromAPI(location: string) {

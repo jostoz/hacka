@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { type TechnicalAnalysisData } from '@/lib/types';
+import { type TechnicalAnalysisData } from '@/lib/types/types';
 import { SignalCard } from './SignalCard';
 import { createChart } from 'lightweight-charts';
 import { useEffect } from 'react';
