@@ -373,25 +373,22 @@ export async function POST(request: Request) {
       if (session.user?.id) {
         try {
           const toolCalls = responseMessages.filter((m): m is CoreToolMessage => 
-            m.role === 'tool' && Array.isArray(m.content)
+            m.role === 'tool'
           );
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              const toolContent = toolCall.content[0];
-              if (toolContent && 'type' in toolContent && toolContent.type === 'tool-call') {
-                const { toolName, args } = toolContent;
+              if ('function_call' in toolCall) {
+                const { name: toolName, arguments: argsString } = toolCall.function_call;
+                
                 if (toolName in forexTools) {
                   const typedToolName = toolName as keyof typeof forexTools;
+                  const args = JSON.parse(argsString);
                   const result = await forexTools[typedToolName].function(args);
                   
                   responseMessages.push({
                     role: "tool",
-                    content: [{
-                      type: 'tool-result',
-                      toolName: typedToolName,
-                      result
-                    }]
+                    content: JSON.stringify(result)
                   } as CoreToolMessage);
                 }
               }
