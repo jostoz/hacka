@@ -427,16 +427,16 @@ export async function POST(request: Request) {
             for (const toolCall of toolCalls) {
               try {
                 const toolContent = toolCall.content[0];
-                if (toolContent && 'toolName' in toolContent) {
-                  const toolName = toolContent.toolName as keyof typeof tools.forex;
-                  const args = toolContent.args;
-                  const result = await tools.forex[toolName].function(args);
+                if (toolContent && 'type' in toolContent && toolContent.type === 'tool-call') {
+                  const { toolName, args } = toolContent;
+                  const typedToolName = toolName as keyof typeof tools.forex;
+                  const result = await tools.forex[typedToolName].function(args);
                   
                   responseMessages.push({
                     role: "tool",
                     content: [{
                       type: 'tool-result',
-                      toolName,
+                      toolName: typedToolName,
                       result
                     }]
                   } as CoreToolMessage);
