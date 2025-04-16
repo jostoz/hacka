@@ -97,7 +97,7 @@ export function TechnicalAnalysisBlock({
         borderColor: '#D1D4DC',
         scaleMargins: {
           top: 0.1,
-          bottom: 0.2,
+          bottom: 0.3,
         },
         autoScale: true,
         mode: 2,
@@ -117,8 +117,22 @@ export function TechnicalAnalysisBlock({
       },
     });
 
+    // Filter out any invalid OHLCV data points
+    const validOHLCVData = ohlcvData.filter(d => (
+      d.timestamp != null &&
+      d.open != null && !Number.isNaN(d.open) &&
+      d.high != null && !Number.isNaN(d.high) &&
+      d.low != null && !Number.isNaN(d.low) &&
+      d.close != null && !Number.isNaN(d.close)
+    ));
+
+    if (validOHLCVData.length === 0) {
+      console.error('No valid OHLCV data points found');
+      return;
+    }
+
     candlestickSeries.setData(
-      ohlcvData.map(d => ({
+      validOHLCVData.map(d => ({
         time: (d.timestamp / 1000) as Time,
         open: d.open,
         high: d.high,
@@ -139,7 +153,7 @@ export function TechnicalAnalysisBlock({
 
     chart.priceScale('volume').applyOptions({
       scaleMargins: {
-        top: 0.9,
+        top: 0.7,
         bottom: 0,
       },
       visible: true,
@@ -182,8 +196,8 @@ export function TechnicalAnalysisBlock({
 
         chart.priceScale('rsi').applyOptions({
           scaleMargins: {
-            top: 0.7,
-            bottom: 0.5,
+            top: 0.1,
+            bottom: 0.8,
           },
           visible: true,
         });
@@ -207,7 +221,7 @@ export function TechnicalAnalysisBlock({
 
         chart.priceScale('macd').applyOptions({
           scaleMargins: {
-            top: 0.2,
+            top: 0.7,
             bottom: 0.1,
           },
           visible: true,
