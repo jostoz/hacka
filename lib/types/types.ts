@@ -32,7 +32,7 @@ export interface ToolResultPart {
   isError?: boolean;
 }
 
-// Forex specific interfaces
+// Forex Data Types
 export interface FxData {
   timestamp: string;
   open: number;
@@ -42,12 +42,14 @@ export interface FxData {
   volume: number;
 }
 
+// Trading Signal Types
 export interface Signal {
   pair: string;
-  signal: 'buy' | 'sell' | 'hold';
+  direction: 'buy' | 'sell' | 'hold';  // Changed from 'signal' to 'direction' for consistency
   confidence: number;
   positionSize: number;
   stopLoss: number;
+  takeProfit?: number;
   justification: string;
   type?: string;
   value?: string | number;
@@ -55,13 +57,15 @@ export interface Signal {
 
 export type QuantSignal = Signal;
 
+// Forecast Types
 export interface Forecast {
   pair: string;
-  prediction: number;
+  nextPrice: number;  // Changed from 'prediction' to 'nextPrice' for consistency
   confidence: number;
   timestamp: string;
 }
 
+// Technical Analysis Types
 export interface TechnicalAnalysisBlock {
   type: string;
   value: string | number;
@@ -71,22 +75,8 @@ export interface TechnicalAnalysisBlock {
 export interface TechnicalAnalysisData {
   pair: string;
   timestamp: number;
-  signals: Array<{
-    pair: string;
-    signal: 'buy' | 'sell' | 'hold';
-    confidence: number;
-    positionSize: number;
-    stopLoss: number;
-    justification: string;
-  }>;
-  historicalData: Array<{
-    timestamp: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-  }>;
+  signals: Signal[];
+  historicalData: FxData[];
   indicators: {
     rsi: number[];
     macd: Array<{
