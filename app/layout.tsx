@@ -2,8 +2,14 @@ import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
 
 import { ThemeProvider } from '@/components/theme-provider';
+import { MarketDataFactory } from '@/lib/services/market-data/factory';
 
 import './globals.css';
+
+// Inicializar el factory con las configuraciones necesarias
+MarketDataFactory.getInstance().initialize({
+  capitalApiKey: process.env.CAPITAL_API_KEY
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://chat.vercel.ai'),

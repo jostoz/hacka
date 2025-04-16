@@ -16,16 +16,29 @@ import {
 } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { useMarketData } from '@/lib/hooks/useMarketData';
+import type { MarketDataParams } from '@/lib/types/market-data';
 
 interface TechnicalAnalysisBlockProps {
-  data: TechnicalAnalysisData;
+  symbol: string;
+  source?: MarketDataParams['source'];
 }
 
-export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
+export function TechnicalAnalysisBlock({ 
+  symbol, 
+  source = 'yahoo' 
+}: TechnicalAnalysisBlockProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
+  const { data, isLoading, error } = useMarketData({
+    symbol,
+    interval: '1d',
+    range: '1y',
+    source
+  });
+
   useEffect(() => {
-    if (!chartContainerRef.current || !data.historicalData) return;
+    if (!chartContainerRef.current || !data?.data) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -89,7 +102,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     });
 
     candlestickSeries.setData(
-      data.historicalData.map(d => ({
+      data.data.map(d => ({
         time: (d.timestamp / 1000) as Time,
         open: d.open,
         high: d.high,
@@ -106,7 +119,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       },
     });
 
-    const avgVolume = data.historicalData.reduce((sum, d) => sum + d.volume, 0) / data.historicalData.length;
+    const avgVolume = data.data.reduce((sum, d) => sum + d.volume, 0) / data.data.length;
 
     chart.priceScale('volume').applyOptions({
       scaleMargins: {
@@ -117,7 +130,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     });
 
     volumeSeries.setData(
-      data.historicalData.map(d => ({
+      data.data.map(d => ({
         time: (d.timestamp / 1000) as Time,
         value: d.volume,
         color: d.volume > avgVolume * 1.5 ? '#ef5350' : '#26a69a'
@@ -158,13 +171,13 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       });
 
       const rsiData = data.indicators.rsi.map((value, index) => ({
-        time: (data.historicalData[index].timestamp / 1000) as Time,
+        time: (data.data[index].timestamp / 1000) as Time,
         value,
       }));
 
       rsiSeries.setData(rsiData);
       
-      const timeRange = data.historicalData.map(d => d.timestamp / 1000 as Time);
+      const timeRange = data.data.map(d => d.timestamp / 1000 as Time);
       overboughtLine.setData(timeRange.map(time => ({ time, value: 70 })));
       oversoldLine.setData(timeRange.map(time => ({ time, value: 30 })));
     }
@@ -184,7 +197,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
       macdSeries.setData(
         data.indicators.macd.map((value, index) => ({
-          time: (data.historicalData[index].timestamp / 1000) as Time,
+          time: (data.data[index].timestamp / 1000) as Time,
           value: value.histogram,
           color: value.histogram > 0 
             ? value.histogram > value.macdLine ? '#1B5E20' : '#66BB6A' 
@@ -202,8 +215,8 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       });
       
       supportLine.setData([
-        { time: data.historicalData[0].timestamp / 1000 as Time, value: data.levels.support },
-        { time: data.historicalData[data.historicalData.length - 1].timestamp / 1000 as Time, value: data.levels.support }
+        { time: data.data[0].timestamp / 1000 as Time, value: data.levels.support },
+        { time: data.data[data.data.length - 1].timestamp / 1000 as Time, value: data.levels.support }
       ]);
     }
 
@@ -216,16 +229,16 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       });
       
       resistanceLine.setData([
-        { time: data.historicalData[0].timestamp / 1000 as Time, value: data.levels.resistance },
-        { time: data.historicalData[data.historicalData.length - 1].timestamp / 1000 as Time, value: data.levels.resistance }
+        { time: data.data[0].timestamp / 1000 as Time, value: data.levels.resistance },
+        { time: data.data[data.data.length - 1].timestamp / 1000 as Time, value: data.levels.resistance }
       ]);
     }
 
     const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
     if (visibleLogicalRange !== null) {
       chart.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, data.historicalData.length - 30),
-        to: data.historicalData.length - 1,
+        from: Math.max(0, data.data.length - 30),
+        to: data.data.length - 1,
       });
     }
 
@@ -243,7 +256,35 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data.historicalData, data.indicators, data.levels]);
+  }, [data]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+            <p>Cargando datos del mercado...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-center text-red-600">
+            <p>Error al cargar los datos: {error}</p>
+            <p className="text-sm mt-2">
+              Por favor, intente nuevamente más tarde
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const trendStrength = data.indicators.macd[data.indicators.macd.length - 1]?.histogram || 0;
   const trend = trendStrength > 0 ? 'Alcista' : trendStrength < 0 ? 'Bajista' : 'Neutral';
@@ -253,7 +294,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Análisis Técnico: {data.pair}</h3>
+          <h3 className="text-lg font-semibold">Análisis Técnico: {symbol}</h3>
           <div className="flex gap-4 items-center">
             <Badge variant={trend === 'Alcista' ? 'success' : trend === 'Bajista' ? 'destructive' : 'secondary'}>
               {trend}

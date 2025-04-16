@@ -1,5 +1,6 @@
 Adaptación para FXperto (Enfoque Vercel AI SDK):
 Interfaz Principal: Usa useChat de Vercel AI SDK para la conversación.
+
 Obtención de Datos y Señales: Define funciones backend (Server Actions o API Routes) como herramientas para:
 get_fx_data(pair, timeframe, periods) -> Llama a tu API de datos real-time.
 calculate_quant_signal(data, capital, risk_percent) -> Implementa tu lógica Sigmoide/Tanh.
