@@ -414,11 +414,10 @@ export async function POST(request: Request) {
                   result: result as ToolResult<unknown>
                 };
 
-                const toolMessage: CoreToolMessage = {
+                const toolMessage = {
                   role: "tool",
-                  name: toolName,
                   content: [toolContent]
-                };
+                } as CoreToolMessage;
 
                 responseMessages.push(toolMessage);
               }
@@ -437,7 +436,6 @@ export async function POST(request: Request) {
           console.error('Failed to process tool calls:', error);
           responseMessages.push({
             role: "tool",
-            name: "error",
             content: [{
               type: 'tool-result',
               toolCallId: 'error',
