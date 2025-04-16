@@ -1,10 +1,10 @@
-import type { TechnicalAnalysisData, QuantSignal } from '@/lib/types/types';
+import type { TechnicalAnalysisData, Signal } from '@/lib/types/types';
 
 export interface ForexState {
   currentPair: string;
   timeframe: string;
   lastAnalysis: TechnicalAnalysisData | null;
-  lastSignal: QuantSignal | null;
+  lastSignal: Signal | null;
   error: string | null;
 }
 

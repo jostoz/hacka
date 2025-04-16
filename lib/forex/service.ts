@@ -1,4 +1,4 @@
-import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
+import type { FxData, Signal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
 import { isValidForexPair, isValidTimeframe } from './constants';
 
 // Mock API endpoint - replace with actual API in production
@@ -46,7 +46,7 @@ export async function getMarketData(pair: string, timeframe: string, periods: nu
   });
 }
 
-export async function calculateSignal(config: ForexConfig, data: FxData[]): Promise<ForexResponse<QuantSignal>> {
+export async function calculateSignal(config: ForexConfig, data: FxData[]): Promise<ForexResponse<Signal>> {
   if (data.length < config.periods) {
     return {
       success: false,
@@ -60,7 +60,7 @@ export async function calculateSignal(config: ForexConfig, data: FxData[]): Prom
   // Implement signal calculation logic here
   // This is a placeholder implementation
   const lastPrice = data[data.length - 1].close;
-  const signal: QuantSignal = {
+  const signal: Signal = {
     pair: `${config.pair.base}/${config.pair.quote}`,
     signal: 'hold',
     confidence: 0.5,

@@ -1,4 +1,4 @@
-import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
+import type { FxData, Signal, Forecast, TechnicalAnalysisData, ForexResponse } from './types';
 import { ForexApplicationError } from '../errors/ForexApplicationError';
 
 // API endpoint for forex data

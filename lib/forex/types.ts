@@ -48,9 +48,6 @@ export interface ForexMarket {
   timestamp: string;
 }
 
-// Re-export QuantSignal from main types
-export type { QuantSignal } from '../types/types';
-
 export interface TechnicalAnalysis {
   rsi: {
     value: number;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MarketDataFactory } from '@/lib/services/market-data/factory';
 import type { 
   MarketDataParams, 
@@ -18,7 +18,7 @@ export function useMarketData(params?: MarketDataParams): UseMarketDataResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!params) {
       setData(null);
       setError(null);
@@ -50,16 +50,11 @@ export function useMarketData(params?: MarketDataParams): UseMarketDataResult {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params]);
 
   useEffect(() => {
     fetchData();
-  }, [
-    params?.symbol,
-    params?.interval,
-    params?.range,
-    params?.source
-  ]);
+  }, [fetchData]);
 
   return {
     data,
