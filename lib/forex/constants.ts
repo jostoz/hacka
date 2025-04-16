@@ -1,16 +1,18 @@
+// Available forex pairs
 export const FOREX_PAIRS = [
   'EUR/USD',
   'GBP/USD',
   'USD/JPY',
   'USD/CHF',
-  'AUD/USD',
   'USD/CAD',
+  'AUD/USD',
   'NZD/USD',
   'EUR/GBP',
   'EUR/JPY',
   'GBP/JPY'
 ] as const;
 
+// Available timeframes
 export const TIMEFRAMES = [
   '1m',
   '5m',
@@ -23,29 +25,30 @@ export const TIMEFRAMES = [
   'M'
 ] as const;
 
+// Type definitions derived from constants
 export type ForexPair = typeof FOREX_PAIRS[number];
 export type Timeframe = typeof TIMEFRAMES[number];
 
-// Default values for configuration
-export const DEFAULT_PERIODS = 100;
+// Default values
+export const DEFAULT_PERIODS = 20;
 export const DEFAULT_CAPITAL = 10000;
 export const DEFAULT_RISK_PERCENTAGE = 1;
 
-// Technical analysis constants
-export const TECHNICAL_ANALYSIS = {
+// Technical Analysis Constants
+export const TECHNICAL_INDICATORS = {
   RSI: {
-    PERIODS: 14,
     OVERBOUGHT: 70,
-    OVERSOLD: 30
+    OVERSOLD: 30,
+    PERIODS: 14
   },
   MACD: {
-    FAST_PERIODS: 12,
-    SLOW_PERIODS: 26,
-    SIGNAL_PERIODS: 9
+    FAST_PERIOD: 12,
+    SLOW_PERIOD: 26,
+    SIGNAL_PERIOD: 9
   },
   SMA: {
-    FAST_PERIODS: 10,
-    SLOW_PERIODS: 20
+    FAST_PERIOD: 10,
+    SLOW_PERIOD: 20
   }
 } as const;
 

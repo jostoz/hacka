@@ -5,8 +5,8 @@ import {
   streamObject,
   streamText,
   CoreMessage,
-  CoreToolMessage,
-  CoreAssistantMessage,
+  type CoreAssistantMessage,
+  type CoreToolMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -33,6 +33,7 @@ import {
 import { generateTitleFromUserMessage } from '../../actions';
 import { tools } from '@/lib/tools';
 import { forexTools } from '@/lib/tools/forex';
+import { type ToolResultPart, type ToolResult, type FxData, type QuantSignal, type Forecast } from '@/lib/types/types';
 
 export const maxDuration = 60;
 
@@ -406,15 +407,20 @@ export async function POST(request: Request) {
                 const args = JSON.parse(argsString);
                 const result = await forexTools[typedToolName].function(args);
                 
-                responseMessages.push({
+                const toolContent: ToolResultPart = {
+                  type: 'tool-result',
+                  toolCallId: toolName,
+                  toolName: toolName,
+                  result: result
+                };
+
+                const toolMessage: CoreToolMessage = {
                   role: "tool",
                   name: toolName,
-                  content: [{
-                    type: 'tool-result',
-                    toolCallId: toolName,
-                    result: result
-                  }]
-                } as CoreToolMessage);
+                  content: [toolContent]
+                };
+
+                responseMessages.push(toolMessage);
               }
             }
           }
@@ -431,9 +437,11 @@ export async function POST(request: Request) {
           console.error('Failed to process tool calls:', error);
           responseMessages.push({
             role: "tool",
+            name: "error",
             content: [{
               type: 'tool-result',
               toolCallId: 'error',
+              toolName: 'error',
               result: { error: 'Failed to process tool calls' }
             }]
           } as CoreToolMessage);
