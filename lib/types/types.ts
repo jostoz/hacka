@@ -34,7 +34,6 @@ export interface ToolResultPart {
 
 // Forex specific interfaces
 export interface FxData {
-  pair: string;
   timestamp: string;
   open: number;
   high: number;

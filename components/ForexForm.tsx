@@ -7,7 +7,8 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { forexTools } from '@/lib/tools/forex';
 import { SignalCard } from './SignalCard';
-import type { Signal } from '@/lib/types/types';
+import type { Signal, Forecast, TechnicalAnalysisData, FxData } from '@/lib/types/types';
+import type { QuantSignal as ForexQuantSignal, Forecast as ForexForecast } from '@/lib/forex/types';
 
 // Constantes para las opciones del formulario
 const TIMEFRAME_OPTIONS = [
@@ -42,9 +43,10 @@ export function ForexForm() {
   });
 
   // Estados para los resultados
+  const [marketData, setMarketData] = useState<{ type: string; data: FxData[] } | null>(null);
   const [signal, setSignal] = useState<Signal | null>(null);
-  const [forecast, setForecast] = useState<any | null>(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState<any | null>(null);
+  const [forecast, setForecast] = useState<Forecast | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<TechnicalAnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,13 +72,14 @@ export function ForexForm() {
             risk_percent: config.riskPercent
           });
           
-          // Convert QuantSignal to Signal
+          // Convert ForexQuantSignal to Signal
+          const quantSignal = tradingSignal.data as unknown as ForexQuantSignal;
           const signalData: Signal = {
             pair: config.pair,
-            signal: tradingSignal.data.signal,
-            confidence: tradingSignal.data.confidence || 0.5,
-            positionSize: tradingSignal.data.positionSize || 0,
-            stopLoss: tradingSignal.data.stopLoss || 0,
+            signal: quantSignal.direction as 'buy' | 'sell' | 'hold',
+            confidence: 0.5,
+            positionSize: quantSignal.positionSize || 0,
+            stopLoss: quantSignal.stopLoss || 0,
             justification: `Señal generada basada en análisis cuantitativo para ${config.pair} en timeframe ${config.timeframe}`
           };
           
@@ -87,14 +90,22 @@ export function ForexForm() {
           const forecastData = await forexTools.get_simple_forecast.execute({
             data: marketData.data
           });
-          setForecast(forecastData.data);
+          // Convert ForexForecast to Forecast
+          const forexForecast = forecastData.data as unknown as ForexForecast;
+          const forecastResult: Forecast = {
+            pair: config.pair,
+            prediction: forexForecast.nextPrice,
+            confidence: forexForecast.confidence,
+            timestamp: new Date().toISOString()
+          };
+          setForecast(forecastResult);
           break;
 
         case 'technical':
           const analysis = await forexTools.fetchTechnicalAnalysis.execute({
             pair: config.pair
           });
-          setTechnicalAnalysis(analysis.data);
+          setTechnicalAnalysis(analysis.data as TechnicalAnalysisData);
           break;
       }
     } catch (error: unknown) {
