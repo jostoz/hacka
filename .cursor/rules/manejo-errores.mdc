@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Objetivo: Implementar un manejo de errores que sea informativo y específico del dominio.
+Directivas:
+Errores Personalizados: Utiliza clases de error personalizadas (como ForexApplicationError) para errores específicos de la aplicación.
+Bloques catch Informativos: Implementa try...catch robustos. Captura errores específicos cuando sea posible y proporciona mensajes de error claros y útiles. Diferencia entre errores conocidos y desconocidos/inesperados.

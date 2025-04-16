@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Objetivo: Asegurar que las estructuras de datos sean consistentes, predecibles y se manejen de forma segura.
+Directivas:
+Consistencia en Colecciones: Si una función o API devuelve una lista, usa siempre un array ([]), incluso para un solo elemento.
+Estructura de Resultados: Encapsula los resultados de forma lógica y consistente, especialmente los de las herramientas (ej. usando ToolResultPart o estructuras similares).
+Tipado del Estado: En componentes (React/etc.), tipa explícitamente las variables de estado usando las interfaces/tipos definidos.
+Transformaciones Seguras: Realiza transformaciones de datos (ej. QuantSignal a Signal) de manera explícita y garantizando la compatibilidad de tipos.

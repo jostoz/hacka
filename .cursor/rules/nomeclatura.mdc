@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Objetivo: Mantener un código claro y legible mediante convenciones de nomenclatura consistentes y descriptivas.
+Directivas:
+Nombres Descriptivos: Usa nombres claros que indiquen el propósito de variables, funciones, tipos, etc.
+Nomenclatura de Métodos de Acción: Para funciones o métodos que ejecutan una acción principal (especialmente en herramientas o clases), prefiere el verbo execute sobre nombres genéricos como function, run o handle.
+Consistencia: Sigue las convenciones de nomenclatura estándar (ej. camelCase para variables/funciones, PascalCase para tipos/interfaces/componentes).
