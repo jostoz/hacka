@@ -1,1 +1,0 @@
-export { FxLogo } from './FxLogo'; 
