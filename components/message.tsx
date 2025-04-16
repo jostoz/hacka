@@ -1,6 +1,6 @@
 'use client';
 
-import type { Message } from 'ai';
+import type { Message, ToolInvocation } from 'ai';
 import cx from 'classnames';
 import { motion } from 'framer-motion';
 import type { Dispatch, SetStateAction } from 'react';
@@ -35,19 +35,22 @@ export const PreviewMessage = ({
   vote: Vote | undefined;
   isLoading: boolean;
 }) => {
-  if (message.role === "tool" && message.name === "fetchTechnicalAnalysis") {
-    const result = JSON.parse(message.content);
-    if (result.type === 'technical-analysis') {
-      return (
-        <motion.div
-          className="w-full max-w-3xl mx-auto px-4 mt-4"
-          initial={{ y: 5, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        >
-          <TechnicalAnalysisBlock data={result.data} />
-        </motion.div>
-      );
-    }
+  const technicalAnalysisPart = message.toolInvocations?.find(
+    (part: ToolInvocation) => 
+      part.state === 'result' && 
+      part.toolName === 'fetchTechnicalAnalysis'
+  );
+
+  if (technicalAnalysisPart?.state === 'result' && technicalAnalysisPart.result?.type === 'technical-analysis') {
+    return (
+      <motion.div
+        className="w-full max-w-3xl mx-auto px-4 mt-4"
+        initial={{ y: 5, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <TechnicalAnalysisBlock data={technicalAnalysisPart.result.data} />
+      </motion.div>
+    );
   }
 
   return (
