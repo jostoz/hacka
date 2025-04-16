@@ -71,7 +71,31 @@ export interface TechnicalAnalysisBlock {
 export interface TechnicalAnalysisData {
   pair: string;
   timestamp: string;
-  indicators: TechnicalAnalysisBlock[];
+  signals: Array<{
+    pair: string;
+    signal: 'buy' | 'sell' | 'hold';
+    confidence: number;
+    positionSize: number;
+    stopLoss: number;
+    justification: string;
+  }>;
+  historicalData: Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>;
+  indicators: {
+    rsi: number[];
+    macd: {
+      macdLine: number;
+      signalLine: number;
+      histogram: number;
+    }[];
+    sma: number[];
+  };
   summary: string;
 }
 

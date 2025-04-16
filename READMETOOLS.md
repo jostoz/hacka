@@ -1,104 +1,170 @@
-1. Definir la Herramienta
-Archivo: lib/tools.ts (o donde definas las herramientas)
-Qué hacer:
-Define la herramienta con su descripción, parámetros y función.
+# Guía para Agregar Herramientas al Agente (Vercel AI SDK v2)
 
+## 1. Definir la Herramienta
+**Archivo: `lib/tools/index.ts`**
 
-    export const tools = {
-      fetchFxRates: {
-        description: "Obtiene tasas de cambio en tiempo real para un par de divisas.",
-        parameters: z.object({ pair: z.string() }),
-        function: async ({ pair }) => {
-          const rate = await fetchMarketData(pair); // Llamada a API externa.
-          return { pair, rate };
-        },
-      },
-    };
+Define la herramienta con su descripción, parámetros y función usando Zod para validación:
 
+```typescript
+import { z } from 'zod';
+import type { BaseTool } from '@/lib/types/types';
 
-    2. Configurar el Agente para Usar la Herramienta
-Archivo: app/(chat)/api/chat/route.ts
-Qué hacer:
-
-Añade la herramienta al objeto tools en streamText.
-
-
-    const result = await streamText({
-      model: customModel(model.apiIdentifier),
-      system: systemPrompt(userMessage.content), // Prompt dinámico.
-      messages: coreMessages,
-      tools: {
-        fetchFxRates: tools.fetchFxRates, // Añade la herramienta.
-      },
-      tool_choice: "auto", // El modelo decide cuándo usarla.
-    });
-
-
-    3. Actualizar los Prompts
-Archivo: lib/ai/prompts.ts
-Qué hacer:
-Asegúrate de que los prompts incluyan instrucciones para usar la herramienta.
-Ejemplo en el prompt technical
-
-    export const forexPrompts = {
-      technical: `
-      Si el usuario pregunta por el precio o tendencia de {PAR}:
-      1. Usa la herramienta \`fetchFxRates\` para obtener datos en tiempo real.
-      2. Proporciona un análisis basado en los resultados.
-      `,
-    };
-
-
-    4. Manejar las Respuestas de la Herramienta
-Archivo: app/(chat)/api/chat/route.ts
-Qué hacer:
-Procesa las llamadas a herramientas y añade los resultados al contexto del chat.
-
-
-    const toolCalls = response.choices[0]?.message?.tool_calls;
-    if (toolCalls) {
-      for (const toolCall of toolCalls) {
-        const toolName = toolCall.function.name as keyof typeof tools;
-        const args = JSON.parse(toolCall.function.arguments);
-        const result = await tools[toolName].function(args); // Ejecuta la herramienta.
-        
-        // Añade el resultado al contexto del chat.
-        messages.push({
-          role: "tool",
-          name: toolName,
-          content: JSON.stringify(result),
-        });
-      }
+const forexTools = {
+  fetchFxRates: {
+    description: "Obtiene tasas de cambio en tiempo real para un par de divisas.",
+    parameters: z.object({
+      pair: z.string().describe('Par de divisas (ej: EUR/USD)'),
+      timeframe: z.string().describe('Marco temporal (ej: 1h, 4h, 1d)')
+    }),
+    function: async ({ pair, timeframe }) => {
+      const data = await fetchMarketData(pair, timeframe);
+      return {
+        type: 'fx-data',
+        data
+      };
     }
+  }
+} satisfies Record<string, BaseTool>;
 
+export const tools = {
+  forex: forexTools,
+  // Otras categorías de herramientas
+};
+```
 
-    5. Actualizar los Componentes de UI (opcional)
-Archivo: components/message.tsx (o donde manejes la UI)
-Qué hacer:
-Si la herramienta devuelve datos que deben mostrarse en la UI, asegúrate de que el componente message.tsx pueda manejarlos.
-Ejemplo:
+## 2. Configurar el Endpoint de Chat
+**Archivo: `app/api/chat/route.ts`**
 
-    if (message.role === "tool" && message.name === "fetchFxRates") {
-      const data = JSON.parse(message.content);
-      return <div>📊 {data.pair}: {data.rate}</div>;
-    }
+```typescript
+import { streamText } from 'ai';
+import { tools } from '@/lib/tools';
 
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  
+  return streamText({
+    messages,
+    tools: {
+      fetchFxRates: tools.forex.fetchFxRates
+    },
+    maxSteps: 10,
+    experimental_streamData: true
+  }).toDataStreamResponse();
+}
+```
 
-    6. Probar la Herramienta
-Localmente:
-Ejecuta pnpm dev y prueba la herramienta en el chat.
-Verifica que el modelo llame a la herramienta correctamente y que los resultados se muestren como esperas.
-En Vercel:
-Haz commit y push para desplegar los cambios:
+## 3. Manejar los Resultados en el UI
+**Archivo: `components/message.tsx`**
 
-    git add .
-    git commit -m "feat: add fetchFxRates tool"
-    git push
+```typescript
+import type { Message, ToolInvocation } from 'ai';
 
+export const PreviewMessage = ({ message }: { message: Message }) => {
+  // Buscar resultados de herramientas en toolInvocations
+  const toolResult = message.toolInvocations?.find(
+    (part: ToolInvocation) => 
+      part.state === 'result' && 
+      part.toolName === 'fetchFxRates'
+  );
 
-    Resumen de Archivos a Adaptar
-lib/tools.ts: Definir la herramienta.
-app/(chat)/api/chat/route.ts: Configurar el agente para usar la herramienta.
-lib/ai/prompts.ts: Actualizar los prompts para guiar el uso de la herramienta.
-components/message.tsx (opcional): Manejar la visualización de los resultados de la herramienta.
-Si necesitas ayuda para implementar alguno de estos pasos o ajustar un archivo específico, ¡avísame! Puedo guiarte paso a paso. 🚀
+  if (toolResult?.state === 'result' && toolResult.result?.type === 'fx-data') {
+    return <ForexDataDisplay data={toolResult.result.data} />;
+  }
+
+  // Renderizado normal del mensaje
+  return (
+    <div className="message">
+      {message.content}
+    </div>
+  );
+};
+```
+
+## 4. Crear Componentes de Visualización
+**Archivo: `components/ForexDataDisplay.tsx`**
+
+```typescript
+interface ForexData {
+  pair: string;
+  data: any; // Tipado según tus datos
+}
+
+export function ForexDataDisplay({ data }: { data: ForexData }) {
+  return (
+    <div className="forex-display">
+      <h3>{data.pair}</h3>
+      {/* Renderizar los datos específicos */}
+    </div>
+  );
+}
+```
+
+## 5. Estructura de Tipos
+**Archivo: `lib/types/types.ts`**
+
+```typescript
+import { z } from 'zod';
+
+export interface BaseTool {
+  description: string;
+  parameters: z.ZodObject<any>;
+  function: (args: any) => Promise<{
+    type: string;
+    data: any;
+  }>;
+}
+```
+
+## Notas Importantes
+
+### Cambios en Vercel AI SDK v2
+1. **Tool Invocations**: 
+   - Ya no se usan mensajes con `role: "tool"`
+   - Los resultados de herramientas están en `message.toolInvocations`
+   - Cada invocación tiene estados: 'call', 'result', 'error'
+
+2. **Streaming de Datos**:
+   - Usar `experimental_streamData: true` para streaming
+   - Los resultados se manejan en tiempo real
+
+3. **Tipado**:
+   - Importar tipos desde 'ai': `Message`, `ToolInvocation`
+   - Usar Zod para validación de parámetros
+
+### Estructura de Archivos
+```
+lib/
+  ├── tools/
+  │   ├── index.ts    # Definición de herramientas
+  │   └── forex.ts    # Implementaciones específicas
+  ├── types/
+  │   └── types.ts    # Tipos compartidos
+components/
+  ├── message.tsx     # Manejo de mensajes
+  └── displays/       # Componentes de visualización
+```
+
+### Flujo de Trabajo
+1. Define la herramienta en `tools/index.ts`
+2. Configura el endpoint en `api/chat/route.ts`
+3. Actualiza el componente message para manejar resultados
+4. Crea componentes de visualización específicos
+5. Prueba la integración en el chat
+
+### Pruebas
+```bash
+# Desarrollo local
+pnpm dev
+
+# Despliegue
+git add .
+git commit -m "feat: add new tool integration"
+git push
+```
+
+### Debugging
+- Revisa la consola del navegador para errores
+- Verifica los tipos de datos en cada paso
+- Usa el modo desarrollo para ver el streaming de datos
+
+Para más información, consulta la [documentación oficial del Vercel AI SDK](https://sdk.vercel.ai/docs).
