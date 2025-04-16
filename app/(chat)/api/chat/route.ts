@@ -49,9 +49,9 @@ const blocksTools: AllowedTools[] = [
 
 const weatherTools: AllowedTools[] = ['getWeather'];
 
-const forexTools: AllowedTools[] = ['calculatePipValue', 'fetchFxRates'];
+const forexTools: AllowedTools[] = ['calculatePipValue', 'fetchFxRates', 'fetchTechnicalAnalysis'];
 
-const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexTools, 'fetchTechnicalAnalysis'];
+const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexTools];
 
 const analysisPrompt = `
 Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, genera un análisis financiero con la siguiente estructura:
