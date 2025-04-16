@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-
 import { FxLogo } from './icons';
 
 export const Overview = () => {
