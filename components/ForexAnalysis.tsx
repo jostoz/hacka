@@ -7,7 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
-import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ToolResult } from '@/lib/types/types';
+import type { QuantSignal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
+
+// Define the return type of the forex tools' functions
+type FxDataResponse = ReturnType<typeof forexTools.get_fx_data.function>;
+type ToolResultWithData<T> = { type: string; data: T };
 
 interface ForexConfig {
   pair: string;
@@ -46,22 +50,27 @@ export function ForexAnalysis() {
   });
 
   // Estados para resultados con tipos correctos
-  const [marketData, setMarketData] = useState<ToolResult<FxData> | null>(null);
-  const [signal, setSignal] = useState<ToolResult<QuantSignal> | null>(null);
-  const [forecast, setForecast] = useState<ToolResult<Forecast> | null>(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
+  const [marketData, setMarketData] = useState<any | null>(null);
+  const [signal, setSignal] = useState<ToolResultWithData<QuantSignal> | null>(null);
+  const [forecast, setForecast] = useState<ToolResultWithData<Forecast> | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResultWithData<TechnicalAnalysisData> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Obtener datos del mercado
   const fetchMarketData = async () => {
-    const data = await forexTools.get_fx_data.function({
-      pair: config.pair,
-      timeframe: config.timeframe,
-      periods: config.periods
-    });
-    setMarketData(data);
-    return data;
+    try {
+      const data = await forexTools.get_fx_data.function({
+        pair: config.pair,
+        timeframe: config.timeframe,
+        periods: config.periods
+      });
+      setMarketData(data);
+      return data;
+    } catch (err) {
+      setError('Error al obtener datos: ' + err.message);
+      throw err;
+    }
   };
 
   // Generar señal de trading
