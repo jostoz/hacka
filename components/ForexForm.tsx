@@ -55,7 +55,7 @@ export function ForexForm() {
     
     try {
       // Primero obtenemos los datos del mercado
-      const marketData = await forexTools.get_fx_data.function({
+      const marketData = await forexTools.get_fx_data.execute({
         pair: config.pair,
         timeframe: config.timeframe,
         periods: config.periods
@@ -64,7 +64,7 @@ export function ForexForm() {
       // Dependiendo del tipo de análisis solicitado
       switch (type) {
         case 'signal':
-          const tradingSignal = await forexTools.calculate_quant_signal.function({
+          const tradingSignal = await forexTools.calculate_quant_signal.execute({
             data: marketData.data,
             capital: config.capital,
             risk_percent: config.riskPercent
@@ -84,14 +84,14 @@ export function ForexForm() {
           break;
 
         case 'forecast':
-          const forecastData = await forexTools.get_simple_forecast.function({
+          const forecastData = await forexTools.get_simple_forecast.execute({
             data: marketData.data
           });
           setForecast(forecastData.data);
           break;
 
         case 'technical':
-          const analysis = await forexTools.fetchTechnicalAnalysis.function({
+          const analysis = await forexTools.fetchTechnicalAnalysis.execute({
             pair: config.pair
           });
           setTechnicalAnalysis(analysis.data);
