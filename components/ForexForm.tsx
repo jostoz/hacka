@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { forexTools } from '@/lib/tools/forex';
 import { SignalCard } from './SignalCard';
 import type { Signal, Forecast, TechnicalAnalysisData, FxData } from '@/lib/types/types';
-import type { QuantSignal as ForexQuantSignal, Forecast as ForexForecast } from '@/lib/forex/types';
+import type { Timeframe } from '@/lib/forex/types';
 
 // Constantes para las opciones del formulario
 const TIMEFRAME_OPTIONS = [
@@ -18,7 +18,7 @@ const TIMEFRAME_OPTIONS = [
   { value: '1h', label: '1 hora' },
   { value: '4h', label: '4 horas' },
   { value: '1d', label: '1 día' }
-];
+] as const;
 
 const FOREX_PAIRS = [
   { value: 'EUR/USD', label: 'EUR/USD' },
@@ -27,14 +27,22 @@ const FOREX_PAIRS = [
   { value: 'USD/CHF', label: 'USD/CHF' },
   { value: 'AUD/USD', label: 'AUD/USD' },
   { value: 'USD/CAD', label: 'USD/CAD' }
-];
+] as const;
 
 // Tipos de análisis disponibles
 type AnalysisType = 'signal' | 'forecast' | 'technical';
 
+interface FormConfig {
+  pair: string;
+  timeframe: Timeframe;
+  periods: number;
+  capital: number;
+  riskPercent: number;
+}
+
 export function ForexForm() {
   // Estado para la configuración
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<FormConfig>({
     pair: 'EUR/USD',
     timeframe: '1h',
     periods: 100,
@@ -72,33 +80,30 @@ export function ForexForm() {
             risk_percent: config.riskPercent
           });
           
-          // Convert ForexQuantSignal to Signal
-          const quantSignal = tradingSignal.data as unknown as ForexQuantSignal;
-          const signalData: Signal = {
+          const quantSignal = tradingSignal.data as Signal;
+          setSignal({
             pair: config.pair,
-            signal: quantSignal.direction as 'buy' | 'sell' | 'hold',
-            confidence: 0.5,
-            positionSize: quantSignal.positionSize || 0,
-            stopLoss: quantSignal.stopLoss || 0,
+            signal: quantSignal.signal,
+            confidence: quantSignal.confidence,
+            positionSize: quantSignal.positionSize,
+            stopLoss: quantSignal.stopLoss,
+            takeProfit: quantSignal.takeProfit,
             justification: `Señal generada basada en análisis cuantitativo para ${config.pair} en timeframe ${config.timeframe}`
-          };
-          
-          setSignal(signalData);
+          });
           break;
 
         case 'forecast':
           const forecastData = await forexTools.get_simple_forecast.execute({
             data: marketData.data
           });
-          // Convert ForexForecast to Forecast
-          const forexForecast = forecastData.data as unknown as ForexForecast;
-          const forecastResult: Forecast = {
+          
+          const forexForecast = forecastData.data as Forecast;
+          setForecast({
             pair: config.pair,
-            prediction: forexForecast.nextPrice,
+            nextPrice: forexForecast.nextPrice,
             confidence: forexForecast.confidence,
             timestamp: new Date().toISOString()
-          };
-          setForecast(forecastResult);
+          });
           break;
 
         case 'technical':
@@ -137,7 +142,7 @@ export function ForexForm() {
           <Label htmlFor="timeframe">Marco Temporal</Label>
           <Select
             value={config.timeframe}
-            onValueChange={(value) => setConfig({ ...config, timeframe: value })}
+            onValueChange={(value) => setConfig({ ...config, timeframe: value as Timeframe })}
           >
             {TIMEFRAME_OPTIONS.map((tf) => (
               <option key={tf.value} value={tf.value}>

@@ -45,7 +45,7 @@ export interface FxData {
 // Trading Signal Types
 export interface Signal {
   pair: string;
-  direction: 'buy' | 'sell' | 'hold';  // Changed from 'signal' to 'direction' for consistency
+  signal: 'buy' | 'sell' | 'hold';  // Using 'signal' instead of 'direction' to match existing code
   confidence: number;
   positionSize: number;
   stopLoss: number;
