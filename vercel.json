@@ -1,6 +1,10 @@
 {
   "version": 2,
+  "nodeVersion": "20",
+  "installCommand": "pnpm install --frozen-lockfile --ignore-scripts=false",
   "build": {
-    "nodeVersion": "20"
+    "env": {
+      "NODE_ENV": "production"
+    }
   }
 }
