@@ -90,26 +90,43 @@ function calculateIndicators(data: FxData[]) {
 
 // Actualizar fetchTechnicalAnalysisFromAPI
 async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAnalysisData> {
-  // Generar datos históricos para FxData
-  const fxData: FxData[] = Array.from({ length: 100 }, (_, i) => ({
-    timestamp: Date.now() - (i * 60000), // Usar timestamp numérico
-    open: 1.2000 + Math.random() * 0.0100,
-    high: 1.2050 + Math.random() * 0.0100,
-    low: 1.1950 + Math.random() * 0.0100,
-    close: 1.2000 + Math.random() * 0.0100,
-    volume: Math.floor(Math.random() * 1000000)
-  }));
+  // Generar datos históricos más realistas
+  const basePrice = 1.2000;
+  const volatility = 0.002; // 0.2% de volatilidad
+  const trend = 0.0001; // Tendencia ligera
+  
+  let currentPrice = basePrice;
+  const fxData: FxData[] = Array.from({ length: 100 }, (_, i) => {
+    // Añadir componente de tendencia
+    currentPrice = currentPrice + trend + (Math.random() - 0.5) * volatility;
+    
+    // Generar high/low con más volatilidad en momentos específicos
+    const isVolatilePoint = Math.random() > 0.8;
+    const extraVolatility = isVolatilePoint ? volatility * 2 : volatility;
+    
+    const high = currentPrice + Math.random() * extraVolatility;
+    const low = currentPrice - Math.random() * extraVolatility;
+    
+    // Asegurar que open/close estén entre high/low
+    const open = low + Math.random() * (high - low);
+    const close = low + Math.random() * (high - low);
+    
+    // Volumen más realista con picos ocasionales
+    const baseVolume = 100000;
+    const volumeMultiplier = isVolatilePoint ? 3 : 1;
+    const volume = Math.floor(baseVolume * (0.5 + Math.random()) * volumeMultiplier);
 
-  // Generar datos históricos para el gráfico
-  const historicalData = fxData.map(d => ({
-    timestamp: d.timestamp,
-    open: d.open,
-    high: d.high,
-    low: d.low,
-    close: d.close,
-    volume: d.volume
-  }));
+    return {
+      timestamp: Date.now() - ((99 - i) * 60000), // Más reciente primero
+      open,
+      high,
+      low,
+      close,
+      volume
+    };
+  }).reverse(); // Ordenar de más antiguo a más reciente
 
+  const historicalData = fxData;
   const { rsi, macd, sma } = calculateIndicators(fxData);
   
   if (!macd?.length || !rsi?.length || !sma?.length) {
@@ -126,14 +143,19 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
 
   const histogram = lastMacd.histogram || 0;
 
-  // Calculate support and resistance levels
+  // Calcular niveles de soporte/resistencia más significativos
   const prices = historicalData.map(d => d.close);
   const maxPrice = Math.max(...prices);
   const minPrice = Math.min(...prices);
   const range = maxPrice - minPrice;
   
-  const support = minPrice + (range * 0.1); // Simple support level
-  const resistance = maxPrice - (range * 0.1); // Simple resistance level
+  // Usar niveles más precisos basados en la distribución de precios
+  const pricesSorted = [...prices].sort((a, b) => a - b);
+  const supportIndex = Math.floor(pricesSorted.length * 0.2); // 20th percentil
+  const resistanceIndex = Math.floor(pricesSorted.length * 0.8); // 80th percentil
+  
+  const support = pricesSorted[supportIndex];
+  const resistance = pricesSorted[resistanceIndex];
 
   return {
     pair,

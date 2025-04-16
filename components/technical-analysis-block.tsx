@@ -29,7 +29,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 500,
+      height: 600,
       layout: {
         background: { type: ColorType.Solid, color: '#ffffff' },
         textColor: '#333',
@@ -61,6 +61,8 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
         secondsVisible: false,
         fixLeftEdge: true,
         fixRightEdge: true,
+        barSpacing: 12,
+        minBarSpacing: 8,
       },
       rightPriceScale: {
         borderColor: '#D1D4DC',
@@ -68,6 +70,8 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
           top: 0.1,
           bottom: 0.2,
         },
+        autoScale: true,
+        mode: 2,
       },
     });
 
@@ -106,7 +110,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
     chart.priceScale('volume').applyOptions({
       scaleMargins: {
-        top: 0.85,
+        top: 0.9,
         bottom: 0,
       },
       visible: true,
@@ -147,8 +151,8 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
       chart.priceScale('rsi').applyOptions({
         scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
+          top: 0.7,
+          bottom: 0.5,
         },
         visible: true,
       });
@@ -172,8 +176,8 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
       chart.priceScale('macd').applyOptions({
         scaleMargins: {
-          top: 0.7,
-          bottom: 0.3,
+          top: 0.2,
+          bottom: 0.1,
         },
         visible: true,
       });
@@ -217,7 +221,13 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       ]);
     }
 
-    chart.timeScale().fitContent();
+    const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
+    if (visibleLogicalRange !== null) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: Math.max(0, data.historicalData.length - 30),
+        to: data.historicalData.length - 1,
+      });
+    }
 
     const handleResize = () => {
       if (chartContainerRef.current) {
