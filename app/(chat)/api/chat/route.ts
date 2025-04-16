@@ -33,7 +33,6 @@ import {
 import { generateTitleFromUserMessage } from '../../actions';
 import { tools } from '@/lib/tools';
 import { forexTools } from '@/lib/tools/forex';
-import type { ChatCompletionMessage } from 'ai';
 
 export const maxDuration = 60;
 
@@ -421,13 +420,13 @@ export async function POST(request: Request) {
           });
 
           const toolCalls = responseMessages.filter((m): m is CoreToolMessage => 
-            m.role === 'tool' && 'content' in m
+            m.role === 'tool' && Array.isArray(m.content)
           );
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
               try {
-                const toolContent = Array.isArray(toolCall.content) ? toolCall.content[0] : null;
+                const toolContent = toolCall.content[0];
                 if (toolContent && 'toolName' in toolContent) {
                   const toolName = toolContent.toolName as keyof typeof tools.forex;
                   const args = toolContent.args;
