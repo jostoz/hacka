@@ -1,23 +1,11 @@
 // lib/tools/forex.ts
 import { z } from 'zod';
-import type { BaseTool, TechnicalAnalysisData, Signal } from '@/lib/types/types';
+import { BaseTool, FxData, QuantSignal, Forecast, TechnicalAnalysis } from '@/lib/types/types';
+import { getFxData, calculateQuantSignal, getSimpleForecast, getTechnicalAnalysis } from '@/lib/forex/api';
 import { RSI, MACD, SMA } from 'technicalindicators';
 import { FOREX_PAIRS, TIMEFRAMES } from '@/lib/forex/constants';
 
 // Tipos de datos
-interface FxData {
-  pair: string;
-  timeframe: string;
-  data: Array<{
-    timestamp: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-  }>;
-}
-
 interface MACDResult {
   MACD: number[];
   signal: number[];
@@ -32,25 +20,6 @@ interface IndicatorResult {
     histogram: number;
   }>;
   sma: number[];
-}
-
-interface QuantSignal {
-  pair: string;
-  signal: 'buy' | 'sell' | 'hold';
-  confidence: number;
-  positionSize: number;
-  stopLoss: number;
-  takeProfit: number;
-  riskRewardRatio: number;
-}
-
-interface Forecast {
-  pair: string;
-  predictions: Array<{
-    timestamp: number;
-    value: number;
-    confidenceInterval: [number, number];
-  }>;
 }
 
 // Asegurarnos de que los tipos de retorno están correctamente definidos
@@ -167,15 +136,14 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
 export const forexTools = {
   get_fx_data: {
     name: 'get_fx_data',
-    description: "Obtiene datos históricos de un par de divisas.",
+    description: 'Get historical forex data for a currency pair',
     parameters: z.object({
-      pair: z.string().describe("Par de divisas a analizar"),
-      timeframe: z.string().describe("Marco temporal para el análisis"),
-      periods: z.number().describe("Número de períodos a obtener")
+      pair: z.string().describe('Currency pair (e.g. EUR/USD)'),
+      timeframe: z.string().describe('Timeframe (e.g. 1h, 4h, 1d)'),
+      periods: z.number().describe('Number of periods to fetch')
     }),
-    execute: async (args: Record<string, unknown>): Promise<ToolResult<FxData>> => {
-      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
-      const data = await getFxDataFromAPI(pair, timeframe, periods);
+    execute: async ({ pair, timeframe, periods }: { pair: string; timeframe: string; periods: number }) => {
+      const data = await getFxData(pair, timeframe, periods);
       return {
         type: 'fx-data',
         data
@@ -185,15 +153,14 @@ export const forexTools = {
 
   calculate_quant_signal: {
     name: 'calculate_quant_signal',
-    description: "Calcula la señal cuantitativa basada en los datos.",
+    description: 'Calculate quantitative trading signals based on historical data',
     parameters: z.object({
-      data: z.any().describe("Datos históricos del par de divisas"),
-      capital: z.number().describe("Capital disponible para operar"),
-      risk_percent: z.number().describe("Porcentaje de riesgo por operación")
+      data: z.array(z.any()).describe('Historical price data'),
+      capital: z.number().describe('Trading capital amount'),
+      risk_percent: z.number().describe('Risk percentage per trade')
     }),
-    execute: async (args: Record<string, unknown>): Promise<ToolResult<QuantSignal>> => {
-      const { data, capital, risk_percent } = args as { data: any; capital: number; risk_percent: number };
-      const signal = calculateSignal(data, capital, risk_percent);
+    execute: async ({ data, capital, risk_percent }: { data: FxData[]; capital: number; risk_percent: number }) => {
+      const signal = await calculateQuantSignal(data, capital, risk_percent);
       return {
         type: 'quant-signal',
         data: signal
@@ -203,13 +170,12 @@ export const forexTools = {
 
   get_simple_forecast: {
     name: 'get_simple_forecast',
-    description: "Genera un pronóstico simple basado en los datos.",
+    description: 'Get a simple price forecast based on historical data',
     parameters: z.object({
-      data: z.any().describe("Datos históricos para generar el pronóstico")
+      data: z.array(z.any()).describe('Historical price data')
     }),
-    execute: async (args: Record<string, unknown>): Promise<ToolResult<Forecast>> => {
-      const { data } = args as { data: any };
-      const forecast = generateForecast(data);
+    execute: async ({ data }: { data: FxData[] }) => {
+      const forecast = await getSimpleForecast(data);
       return {
         type: 'forecast',
         data: forecast
@@ -219,20 +185,21 @@ export const forexTools = {
 
   fetchTechnicalAnalysis: {
     name: 'fetchTechnicalAnalysis',
-    description: "Realiza análisis técnico de un par de divisas.",
+    description: 'Get technical analysis for a currency pair',
     parameters: z.object({
-      pair: z.string().describe("Par de divisas a analizar")
+      pair: z.string().describe('Currency pair (e.g. EUR/USD)')
     }),
-    execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
-      const { pair } = args as { pair: string };
-      const result = await fetchTechnicalAnalysisFromAPI(pair);
+    execute: async ({ pair }: { pair: string }) => {
+      const analysis = await getTechnicalAnalysis(pair);
       return {
         type: 'technical-analysis',
-        data: result
+        data: analysis
       };
     }
   }
 } satisfies Record<string, BaseTool>;
+
+export type ForexTools = typeof forexTools;
 
 const validateForexParams = (params: any) => {
   const errors: string[] = [];
