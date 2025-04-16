@@ -9,6 +9,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import type { Message as DBMessage, Document } from '@/lib/db/schema';
+import type { ToolResult } from '@/lib/types/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -242,14 +243,17 @@ export function getDocumentTimestampByIndex(
   return documents[index].createdAt;
 }
 
+interface MessageAnnotation {
+  messageIdFromServer?: string;
+}
+
 export function getMessageIdFromAnnotations(message: Message) {
   if (!message.annotations) return message.id;
 
-  const [annotation] = message.annotations;
+  const [annotation] = message.annotations as MessageAnnotation[];
   if (!annotation) return message.id;
 
-  // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
-  return annotation.messageIdFromServer;
+  return annotation.messageIdFromServer || message.id;
 }
 
 export const formatForexNumber = (value: number, decimals: number = 4) => {
@@ -271,37 +275,50 @@ export const validateForexMessage = (message: CoreMessage): boolean => {
          );
 };
 
-export const validateToolResponse = (response: any): boolean => {
-  return (
-    response &&
-    typeof response === 'object' &&
-    'type' in response &&
-    'data' in response
-  );
+interface ToolResponseValidation {
+  type: string;
+  data: unknown;
+}
+
+export const validateToolResponse = (response: unknown): boolean => {
+  if (!response || typeof response !== 'object') {
+    return false;
+  }
+  
+  const toolResponse = response as ToolResponseValidation;
+  return 'type' in toolResponse && 'data' in toolResponse;
 };
 
-export const validateForexToolCall = (toolCall: any): boolean => {
+interface ForexToolCall {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export const validateForexToolCall = (toolCall: unknown): boolean => {
+  if (!toolCall || typeof toolCall !== 'object') {
+    return false;
+  }
+  
+  const forexCall = toolCall as ForexToolCall;
   return (
-    toolCall &&
-    typeof toolCall === 'object' &&
-    'function_call' in toolCall &&
-    'name' in toolCall.function_call &&
-    'arguments' in toolCall.function_call
+    'name' in forexCall &&
+    typeof forexCall.name === 'string' &&
+    'arguments' in forexCall &&
+    typeof forexCall.arguments === 'object'
   );
 };
 
 export const createForexToolMessage = (
   toolName: string,
-  result: any
+  result: unknown
 ): CoreToolMessage => {
   return {
     role: 'tool',
-    name: toolName,
     content: [{
       type: 'tool-result',
-      toolCallId: toolName,
-      toolName: toolName,
-      result: result
+      toolCallId: generateUUID(),
+      toolName,
+      result: result as ToolResult<unknown>
     }]
-  } as CoreToolMessage;
+  };
 };

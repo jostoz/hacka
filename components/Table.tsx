@@ -7,22 +7,33 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface TableProps {
-  data?: Array<Record<string, any>>;
-  columns?: Array<{
-    key: string;
-    label: string;
-  }>;
+// Tipo para representar una columna de la tabla
+interface TableColumn {
+  key: string;
+  label: string;
 }
 
-export function Table({ 
+// Props genéricos para la tabla
+interface TableProps<T extends Record<string, unknown>> {
+  data?: T[];
+  columns?: TableColumn[];
+}
+
+// Type guard para validar que un valor es un registro válido
+function isValidRecord<T extends Record<string, unknown>>(value: unknown): value is T {
+  return typeof value === 'object' && value !== null;
+}
+
+export function Table<T extends Record<string, unknown>>({ 
   data = [], 
   columns = [] 
-}: TableProps) {
+}: TableProps<T>) {
   // Si no hay columnas definidas, usar las claves del primer objeto
   const tableColumns = columns.length > 0 
     ? columns 
-    : Object.keys(data[0] || {}).map(key => ({ key, label: key }));
+    : (data[0] && isValidRecord<T>(data[0]) 
+        ? Object.keys(data[0]).map(key => ({ key, label: key }))
+        : []);
 
   return (
     <div className="w-full overflow-auto">
@@ -41,7 +52,9 @@ export function Table({
             <TableRow key={index}>
               {tableColumns.map((column) => (
                 <TableCell key={column.key}>
-                  {row[column.key]?.toString() || ''}
+                  {isValidRecord<T>(row) && row[column.key] !== undefined
+                    ? String(row[column.key])
+                    : ''}
                 </TableCell>
               ))}
             </TableRow>

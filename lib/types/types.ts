@@ -15,7 +15,7 @@ export type MessageType =
 export interface BaseTool {
   name: string;
   description: string;
-  parameters: z.ZodObject<any>;
+  parameters: z.ZodObject<z.ZodRawShape>;
   execute: (args: Record<string, unknown>) => Promise<ToolResult<unknown>>;
 }
 

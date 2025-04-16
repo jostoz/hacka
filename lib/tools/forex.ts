@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { BaseTool, FxData, QuantSignal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
 import { RSI, MACD, SMA } from 'technicalindicators';
 import { FOREX_PAIRS, TIMEFRAMES } from '@/lib/forex/constants';
+import { ForexConfig, ForexResponse, ForexError } from '../forex/types';
+import { ForexPair, Timeframe, isValidForexPair, isValidTimeframe } from '../forex/constants';
 
 // Tipos de datos
 interface MACDResult {
@@ -20,6 +22,16 @@ interface IndicatorResult {
   }>;
   sma: number[];
 }
+
+// Schema de validación para FxData
+const fxDataSchema = z.object({
+  timestamp: z.number(),
+  open: z.number(),
+  high: z.number(),
+  low: z.number(),
+  close: z.number(),
+  volume: z.number()
+});
 
 // Funciones de API
 async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData[]> {
@@ -169,7 +181,7 @@ export const forexTools = {
     name: 'calculate_quant_signal',
     description: 'Calculate quantitative trading signals based on historical data',
     parameters: z.object({
-      data: z.array(z.any()).describe('Historical price data'),
+      data: z.array(fxDataSchema).describe('Historical price data'),
       capital: z.number().describe('Trading capital amount'),
       risk_percent: z.number().describe('Risk percentage per trade')
     }),
@@ -187,7 +199,7 @@ export const forexTools = {
     name: 'get_simple_forecast',
     description: 'Get a simple price forecast based on historical data',
     parameters: z.object({
-      data: z.array(z.any()).describe('Historical price data')
+      data: z.array(fxDataSchema).describe('Historical price data')
     }),
     execute: async (args: Record<string, unknown>) => {
       const { data } = args as { data: FxData[] };
@@ -218,20 +230,27 @@ export const forexTools = {
 
 export type ForexTools = typeof forexTools;
 
-const validateForexParams = (params: any) => {
-  const errors: string[] = [];
-  
-  if (!FOREX_PAIRS.includes(params.pair)) {
-    errors.push(`Par inválido: ${params.pair}`);
-  }
-  
-  if (!TIMEFRAMES.includes(params.timeframe)) {
-    errors.push(`Timeframe inválido: ${params.timeframe}`);
-  }
-  
-  if (params.periods < 10 || params.periods > 1000) {
-    errors.push(`Número de períodos inválido: ${params.periods}`);
-  }
-  
-  return errors;
+const validateForexParams = (params: Record<string, unknown>): boolean => {
+  return (
+    params &&
+    typeof params === 'object' &&
+    Object.entries(params).every(([key, value]) => {
+      switch (key) {
+        case 'pair':
+          return typeof value === 'string' && isValidForexPair(value);
+        case 'timeframe':
+          return typeof value === 'string' && isValidTimeframe(value);
+        case 'periods':
+          return typeof value === 'number' && value > 0;
+        case 'capital':
+          return typeof value === 'number' && value > 0;
+        case 'risk_percent':
+          return typeof value === 'number' && value > 0 && value <= 100;
+        case 'data':
+          return Array.isArray(value) && value.length > 0;
+        default:
+          return false;
+      }
+    })
+  );
 };

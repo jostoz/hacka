@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
-import type { Signal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
+import type { Signal, Forecast, TechnicalAnalysisData, FxData, ToolResult } from '@/lib/types/types';
 
 interface ForexConfig {
   pair: string;
@@ -15,6 +15,10 @@ interface ForexConfig {
   periods: number;
   capital: number;
   riskPercent: number;
+}
+
+interface MarketData extends ToolResult<FxData[]> {
+  type: 'fx-data';
 }
 
 // Define custom types that match the actual data structure from forexTools
@@ -58,10 +62,10 @@ export function ForexAnalysis() {
     riskPercent: 2
   });
 
-  const [marketData, setMarketData] = useState<any | null>(null);
-  const [signal, setSignal] = useState<{ type: string; data: ForexToolSignal } | null>(null);
-  const [forecast, setForecast] = useState<{ type: string; data: ForexToolForecast } | null>(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState<{ type: string; data: ForexToolTechnicalAnalysis } | null>(null);
+  const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [signal, setSignal] = useState<ToolResult<ForexToolSignal> | null>(null);
+  const [forecast, setForecast] = useState<ToolResult<ForexToolForecast> | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<ForexToolTechnicalAnalysis> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,8 +76,8 @@ export function ForexAnalysis() {
         timeframe: config.timeframe,
         periods: config.periods
       });
-      setMarketData(data);
-      return data;
+      setMarketData(data as MarketData);
+      return data as MarketData;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError('Error al obtener datos: ' + errorMessage);
@@ -90,7 +94,7 @@ export function ForexAnalysis() {
         capital: config.capital,
         risk_percent: config.riskPercent
       });
-      setSignal(tradingSignal as { type: string; data: ForexToolSignal });
+      setSignal(tradingSignal as ToolResult<ForexToolSignal>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError('Error al generar señal: ' + errorMessage);
@@ -106,7 +110,7 @@ export function ForexAnalysis() {
       const forecastData = await forexTools.get_simple_forecast.execute({
         data: data.data
       });
-      setForecast(forecastData as { type: string; data: ForexToolForecast });
+      setForecast(forecastData as ToolResult<ForexToolForecast>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError('Error al generar pronóstico: ' + errorMessage);
@@ -121,7 +125,7 @@ export function ForexAnalysis() {
       const analysis = await forexTools.fetchTechnicalAnalysis.execute({
         pair: config.pair
       });
-      setTechnicalAnalysis(analysis as { type: string; data: ForexToolTechnicalAnalysis });
+      setTechnicalAnalysis(analysis as ToolResult<ForexToolTechnicalAnalysis>);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError('Error en análisis técnico: ' + errorMessage);
