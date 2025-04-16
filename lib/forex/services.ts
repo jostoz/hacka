@@ -1,4 +1,4 @@
-import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse } from './types';
+import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse, Signal } from './types';
 
 // API endpoint for forex data
 const FOREX_API_ENDPOINT = process.env.FOREX_API_ENDPOINT || 'https://api.example.com/forex';
@@ -28,7 +28,9 @@ export async function getFxData(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch forex data'
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to fetch forex data'
+      }
     };
   }
 }
@@ -50,29 +52,35 @@ export function calculateQuantSignal(
     const prevPrice = data[data.length - 2].close;
     
     // Simple trend-following strategy
-    const direction = lastPrice > prevPrice ? 'buy' : lastPrice < prevPrice ? 'sell' : 'hold';
+    const signalType = lastPrice > prevPrice ? 'buy' : lastPrice < prevPrice ? 'sell' : 'hold';
     const confidence = Math.abs((lastPrice - prevPrice) / prevPrice);
     
     // Position sizing based on risk
     const riskAmount = capital * (riskPercentage / 100);
-    const stopLoss = direction === 'buy' ? lastPrice * 0.99 : lastPrice * 1.01;
-    const takeProfit = direction === 'buy' ? lastPrice * 1.02 : lastPrice * 0.98;
+    const stopLoss = signalType === 'buy' ? lastPrice * 0.99 : lastPrice * 1.01;
+    const takeProfit = signalType === 'buy' ? lastPrice * 1.02 : lastPrice * 0.98;
+    const positionSize = riskAmount / Math.abs(lastPrice - stopLoss);
 
     return {
       success: true,
       data: {
-        direction,
+        pair: 'EURUSD', // This should come from parameters
+        signal: signalType,
         confidence,
-        entryPrice: lastPrice,
+        positionSize,
         stopLoss,
         takeProfit,
-        timestamp: Date.now()
+        justification: `Signal based on price movement from ${prevPrice} to ${lastPrice}`,
+        type: 'trend-following',
+        value: lastPrice
       }
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to calculate signal'
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to calculate signal'
+      }
     };
   }
 }
@@ -99,7 +107,7 @@ export function getSimpleForecast(data: FxData[]): ForexResponse<Forecast> {
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const nextTimestamp = timestamps[timestamps.length - 1] + 
       (timestamps[1] - timestamps[0]);
-    const predictedPrice = slope * nextTimestamp + 
+    const nextPrice = slope * nextTimestamp + 
       (sumY - slope * sumX) / n;
     
     const confidence = Math.min(0.95, Math.abs(slope));
@@ -107,15 +115,18 @@ export function getSimpleForecast(data: FxData[]): ForexResponse<Forecast> {
     return {
       success: true,
       data: {
-        timestamp: nextTimestamp,
-        predictedPrice,
-        confidence
+        pair: 'EURUSD', // This should come from parameters
+        nextPrice,
+        confidence,
+        timestamp: new Date(nextTimestamp).toISOString()
       }
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to generate forecast'
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to generate forecast'
+      }
     };
   }
 }
@@ -140,7 +151,7 @@ export function getTechnicalAnalysis(data: FxData[]): ForexResponse<TechnicalAna
     const avgLoss = losses.slice(-14).reduce((a, b) => a + b) / 14;
     
     const rs = avgGain / (avgLoss || 1);
-    const rsi = 100 - (100 / (1 + rs));
+    const rsiValue = 100 - (100 / (1 + rs));
 
     // Calculate MACD
     const ema12 = calculateEMA(prices, 12);
@@ -153,25 +164,47 @@ export function getTechnicalAnalysis(data: FxData[]): ForexResponse<TechnicalAna
     const fastSMA = calculateSMA(prices, 10);
     const slowSMA = calculateSMA(prices, 20);
 
+    // Generate signals based on indicators
+    const signals: Signal[] = [];
+    if (rsiValue < 30) {
+      signals.push({
+        pair: 'EURUSD', // This should come from parameters
+        signal: 'buy',
+        confidence: 0.7,
+        positionSize: 1,
+        stopLoss: prices[prices.length - 1] * 0.99,
+        justification: 'RSI indicates oversold conditions',
+        type: 'RSI',
+        value: rsiValue
+      });
+    }
+
     return {
       success: true,
       data: {
-        rsi,
-        macd: {
-          macdLine,
-          signalLine,
-          histogram
+        pair: 'EURUSD', // This should come from parameters
+        timestamp: data[data.length - 1].timestamp,
+        signals,
+        historicalData: data,
+        indicators: {
+          rsi: [rsiValue],
+          macd: [{
+            macdLine,
+            signalLine,
+            histogram,
+            trend: macdLine > signalLine ? 'bullish' : 'bearish'
+          }],
+          sma: [fastSMA, slowSMA]
         },
-        sma: {
-          fast: fastSMA,
-          slow: slowSMA
-        }
+        summary: `Technical analysis based on ${data.length} data points`
       }
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to perform technical analysis'
+      error: {
+        message: error instanceof Error ? error.message : 'Failed to perform technical analysis'
+      }
     };
   }
 }
