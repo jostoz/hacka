@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
+import type { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ToolResult } from '@/lib/types/types';
 
 interface ForexConfig {
   pair: string;
@@ -44,11 +45,11 @@ export function ForexAnalysis() {
     riskPercent: 2
   });
 
-  // Estados para resultados
-  const [marketData, setMarketData] = useState(null);
-  const [signal, setSignal] = useState(null);
-  const [forecast, setForecast] = useState(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState(null);
+  // Estados para resultados con tipos correctos
+  const [marketData, setMarketData] = useState<ToolResult<FxData> | null>(null);
+  const [signal, setSignal] = useState<ToolResult<QuantSignal> | null>(null);
+  const [forecast, setForecast] = useState<ToolResult<Forecast> | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +74,7 @@ export function ForexAnalysis() {
         capital: config.capital,
         risk_percent: config.riskPercent
       });
-      setSignal(tradingSignal.data);
+      setSignal(tradingSignal);
     } catch (err) {
       setError('Error al generar señal: ' + err.message);
     } finally {
@@ -89,7 +90,7 @@ export function ForexAnalysis() {
       const forecastData = await forexTools.get_simple_forecast.function({
         data: data.data
       });
-      setForecast(forecastData.data);
+      setForecast(forecastData);
     } catch (err) {
       setError('Error al generar pronóstico: ' + err.message);
     } finally {
@@ -104,7 +105,7 @@ export function ForexAnalysis() {
       const analysis = await forexTools.fetchTechnicalAnalysis.function({
         pair: config.pair
       });
-      setTechnicalAnalysis(analysis.data);
+      setTechnicalAnalysis(analysis);
     } catch (err) {
       setError('Error en análisis técnico: ' + err.message);
     } finally {
@@ -225,13 +226,13 @@ export function ForexAnalysis() {
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Señal de Trading</h3>
           <SignalCard
-            pair={signal.pair}
-            signal={signal.signal}
-            confidence={signal.confidence}
-            positionSize={signal.positionSize}
-            stopLoss={signal.stopLoss}
-            takeProfit={signal.takeProfit}
-            riskRewardRatio={signal.riskRewardRatio}
+            pair={signal.data.pair}
+            signal={signal.data.signal}
+            confidence={signal.data.confidence}
+            positionSize={signal.data.positionSize}
+            stopLoss={signal.data.stopLoss}
+            takeProfit={signal.data.takeProfit}
+            riskRewardRatio={signal.data.riskRewardRatio}
           />
         </div>
       )}
@@ -240,7 +241,7 @@ export function ForexAnalysis() {
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Pronóstico</h3>
           <pre className="bg-gray-100 p-4 rounded">
-            {JSON.stringify(forecast, null, 2)}
+            {JSON.stringify(forecast.data, null, 2)}
           </pre>
         </div>
       )}
@@ -249,7 +250,7 @@ export function ForexAnalysis() {
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Análisis Técnico</h3>
           <pre className="bg-gray-100 p-4 rounded">
-            {JSON.stringify(technicalAnalysis, null, 2)}
+            {JSON.stringify(technicalAnalysis.data, null, 2)}
           </pre>
         </div>
       )}
