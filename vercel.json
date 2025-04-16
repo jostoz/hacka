@@ -4,6 +4,6 @@
         "NODE_ENV": "production"
       },
       "installCommand": "pnpm install --frozen-lockfile --ignore-scripts=false",
-      "nodeVersion": "20"  // Usa Node.js LTS para evitar conflictos
+      "nodeVersion": "20"
     }
   }
