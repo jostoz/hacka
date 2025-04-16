@@ -19,6 +19,35 @@ interface ApplicationError extends Error {
   status: number;
 }
 
+export class ForexApplicationError extends Error {
+  constructor(
+    message: string,
+    public info: string,
+    public status: number,
+    public toolName?: string
+  ) {
+    super(message);
+    this.name = 'ForexApplicationError';
+  }
+}
+
+export const handleForexError = (error: unknown) => {
+  if (error instanceof ForexApplicationError) {
+    console.error(`Forex Tool Error: ${error.toolName}`, error);
+    return {
+      error: true,
+      message: error.message,
+      info: error.info,
+      status: error.status
+    };
+  }
+  return {
+    error: true,
+    message: 'Unknown forex error',
+    status: 500
+  };
+};
+
 export const fetcher = async (url: string) => {
   const res = await fetch(url);
 
@@ -222,3 +251,56 @@ export function getMessageIdFromAnnotations(message: Message) {
   // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
   return annotation.messageIdFromServer;
 }
+
+export const formatForexNumber = (value: number, decimals: number = 4) => {
+  return value.toFixed(decimals);
+};
+
+export const formatPipValue = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(value);
+};
+
+export const validateForexMessage = (message: CoreMessage): boolean => {
+  return message.role === 'tool' && 
+         message.content?.some(c => 
+           ['fx-data', 'quant-signal', 'forecast', 'technical-analysis']
+           .includes(c.type)
+         );
+};
+
+export const validateToolResponse = (response: any): boolean => {
+  return (
+    response &&
+    typeof response === 'object' &&
+    'type' in response &&
+    'data' in response
+  );
+};
+
+export const validateForexToolCall = (toolCall: any): boolean => {
+  return (
+    toolCall &&
+    typeof toolCall === 'object' &&
+    'function_call' in toolCall &&
+    'name' in toolCall.function_call &&
+    'arguments' in toolCall.function_call
+  );
+};
+
+export const createForexToolMessage = (
+  toolName: string,
+  result: any
+): CoreToolMessage => {
+  return {
+    role: 'tool',
+    name: toolName,
+    content: [{
+      type: 'tool-result',
+      toolCallId: toolName,
+      result: result
+    }]
+  } as CoreToolMessage;
+};

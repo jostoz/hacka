@@ -75,31 +75,19 @@ function generateForecast(data: FxData): Forecast {
 
 // Función para calcular indicadores
 function calculateIndicators(data: Array<{ value: number }>) {
-  const closes = data.map(d => d.value);
-
-  // RSI (14 períodos)
-  const rsi = RSI.calculate({
-    values: closes,
-    period: 14,
-  });
-
-  // MACD (12, 26, 9)
-  const macd = MACD.calculate({
-    values: closes,
-    fastPeriod: 12,
-    slowPeriod: 26,
-    signalPeriod: 9,
-    SimpleMAOscillator: false,
-    SimpleMASignal: false,
-  });
-
-  // SMA (20 períodos)
-  const sma = SMA.calculate({
-    values: closes,
-    period: 20,
-  });
-
-  return { rsi, macd, sma };
+  const values = data.map(d => d.value);
+  return {
+    rsi: RSI.calculate({ values, period: 14 }),
+    macd: MACD.calculate({
+      values,
+      fastPeriod: 12,
+      slowPeriod: 26,
+      signalPeriod: 9,
+      SimpleMAOscillator: false,
+      SimpleMASignal: false,
+    }),
+    sma: SMA.calculate({ values, period: 20 })
+  };
 }
 
 // Actualizar fetchTechnicalAnalysisFromAPI
@@ -185,3 +173,21 @@ export const forexTools = {
     }
   }
 } satisfies Record<string, BaseTool>;
+
+const validateForexParams = (params: any) => {
+  const errors: string[] = [];
+  
+  if (!VALID_PAIRS.includes(params.pair)) {
+    errors.push(`Par inválido: ${params.pair}`);
+  }
+  
+  if (!VALID_TIMEFRAMES.includes(params.timeframe)) {
+    errors.push(`Timeframe inválido: ${params.timeframe}`);
+  }
+  
+  if (params.periods < 10 || params.periods > 1000) {
+    errors.push('Períodos deben estar entre 10 y 1000');
+  }
+  
+  return errors;
+};

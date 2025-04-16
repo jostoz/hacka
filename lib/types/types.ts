@@ -67,3 +67,23 @@ export interface TechnicalAnalysisData {
     sma: number[];
   };
 }
+
+export type MessageType = 
+  | 'fx-data' 
+  | 'quant-signal' 
+  | 'forecast' 
+  | 'technical-analysis' 
+  | 'weather' 
+  | 'text';
+
+export interface ToolContent {
+  type: 'tool-result';
+  toolCallId: string;
+  result: ToolResult<any>;
+}
+
+export interface CoreToolMessage {
+  role: 'tool';
+  name: string;
+  content: ToolContent[];
+}
