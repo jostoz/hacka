@@ -376,9 +376,14 @@ export async function POST(request: Request) {
     onFinish: async ({ responseMessages }) => {
       if (session.user?.id) {
         try {
-          const toolCalls = responseMessages.filter((m): m is ToolCallMessage => 
-            m.role === 'tool' && 'function_call' in m
-          );
+          const toolCalls = responseMessages.filter((m): m is ToolCallMessage => {
+            return m.role === 'tool' && 
+                   'function_call' in m && 
+                   typeof m.function_call === 'object' &&
+                   m.function_call !== null &&
+                   'name' in m.function_call &&
+                   'arguments' in m.function_call;
+          });
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
