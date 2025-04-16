@@ -45,7 +45,11 @@ type AllowedTools =
   | 'fetchFxRates'
   | 'fetchTechnicalAnalysis';
 
-const forexToolNames: AllowedTools[] = ['calculatePipValue', 'fetchFxRates', 'fetchTechnicalAnalysis'];
+const forexToolNames: AllowedTools[] = [
+  'calculatePipValue', 
+  'fetchFxRates', 
+  'fetchTechnicalAnalysis'
+];
 
 const blocksTools: AllowedTools[] = [
   'createDocument',
@@ -55,7 +59,11 @@ const blocksTools: AllowedTools[] = [
 
 const weatherTools: AllowedTools[] = ['getWeather'];
 
-const allTools: AllowedTools[] = [...blocksTools, ...weatherTools, ...forexToolNames];
+const allTools: AllowedTools[] = [
+  ...blocksTools, 
+  ...weatherTools, 
+  ...forexToolNames
+];
 
 const analysisPrompt = `
 Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, genera un análisis financiero con la siguiente estructura:
@@ -80,8 +88,12 @@ interface ToolCallMessage extends CoreToolMessage {
 
 interface ToolMessage {
   role: 'tool';
-  function_call: FunctionCall;
-  content?: string;
+  name: string;
+  content: Array<{
+    type: 'tool-result';
+    toolCallId: string;
+    result: any;
+  }>;
 }
 
 export async function POST(request: Request) {
@@ -396,9 +408,10 @@ export async function POST(request: Request) {
                 
                 responseMessages.push({
                   role: "tool",
+                  name: toolName,
                   content: [{
                     type: 'tool-result',
-                    toolCallId: toolCall.function_call.name,
+                    toolCallId: toolName,
                     result: result
                   }]
                 } as CoreToolMessage);
@@ -416,6 +429,14 @@ export async function POST(request: Request) {
           });
         } catch (error) {
           console.error('Failed to process tool calls:', error);
+          responseMessages.push({
+            role: "tool",
+            content: [{
+              type: 'tool-result',
+              toolCallId: 'error',
+              result: { error: 'Failed to process tool calls' }
+            }]
+          } as CoreToolMessage);
         }
       }
 

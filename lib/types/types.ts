@@ -4,16 +4,48 @@ import { z } from 'zod';
 export interface BaseTool<T = any> {
   description: string;
   parameters: z.ZodObject<any>;
-  function: (args: T) => Promise<ToolResponse>;
+  function: (args: T) => Promise<ToolResult<any>>;
 }
 
 // Tipos de respuesta de las herramientas
-export interface ToolResponse {
-  type: 'technical-analysis' | 'weather' | 'text';
-  data: any;
+export interface ToolResult<T> {
+  type: 'fx-data' | 'quant-signal' | 'forecast' | 'technical-analysis' | 'weather' | 'text';
+  data: T;
 }
 
 // Tipos específicos para forex
+export interface FxData {
+  pair: string;
+  timeframe: string;
+  data: Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>;
+}
+
+export interface QuantSignal {
+  pair: string;
+  signal: 'buy' | 'sell' | 'hold';
+  confidence: number;
+  positionSize: number;
+  stopLoss: number;
+  takeProfit: number;
+  riskRewardRatio: number;
+}
+
+export interface Forecast {
+  pair: string;
+  predictions: Array<{
+    timestamp: number;
+    value: number;
+    confidenceInterval: [number, number];
+  }>;
+}
+
 export interface Signal {
   pair: string;
   signal: 'buy' | 'sell' | 'hold';
