@@ -89,11 +89,11 @@ export interface TechnicalAnalysisData {
   }>;
   indicators: {
     rsi: number[];
-    macd: {
+    macd: Array<{
       macdLine: number;
       signalLine: number;
       histogram: number;
-    }[];
+    }>;
     sma: number[];
   };
   summary: string;
