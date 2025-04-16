@@ -375,7 +375,7 @@ export async function POST(request: Request) {
       get_simple_forecast: forexTools.get_simple_forecast,
       fetchTechnicalAnalysis: forexTools.fetchTechnicalAnalysis
     },
-    tool_choice: "auto",
+    toolChoice: "auto",
     onFinish: async ({ responseMessages }) => {
       if (session.user?.id) {
         try {
