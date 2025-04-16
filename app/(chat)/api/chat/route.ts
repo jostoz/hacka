@@ -405,13 +405,13 @@ export async function POST(request: Request) {
               if (toolName in forexTools) {
                 const typedToolName = toolName as keyof typeof forexTools;
                 const args = JSON.parse(argsString);
-                const result = await forexTools[typedToolName].function(args);
+                const result = await forexTools[typedToolName].execute(args);
                 
                 const toolContent: ToolResultPart = {
                   type: 'tool-result',
                   toolCallId: toolName,
                   toolName: toolName,
-                  result: result as ToolResult<unknown>
+                  result: result
                 };
 
                 const toolMessage = {
