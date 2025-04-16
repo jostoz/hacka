@@ -36,6 +36,12 @@ interface Forecast {
   }>;
 }
 
+// Asegurarnos de que los tipos de retorno están correctamente definidos
+interface ToolResult<T> {
+  type: string;
+  data: T;
+}
+
 // Funciones de API
 async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData> {
   // Implementar llamada a API real
@@ -126,7 +132,7 @@ export const forexTools = {
       timeframe: z.string().describe('Marco temporal, ej: 1h, 4h, 1d'),
       periods: z.number().describe('Número de periodos a obtener')
     }),
-    function: async ({ pair, timeframe, periods }) => {
+    function: async ({ pair, timeframe, periods }): Promise<ToolResult<FxData>> => {
       const data = await getFxDataFromAPI(pair, timeframe, periods);
       return {
         type: 'fx-data',

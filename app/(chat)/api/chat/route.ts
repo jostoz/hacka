@@ -364,73 +364,26 @@ export async function POST(request: Request) {
           };
         },
       },
-      calculatePipValue: {
-        description: 'Calcula el valor de un pip para un par de divisas y tamaño de lote.',
-        parameters: z.object({
-          pair: z.string().describe('Par de divisas, ej: EUR/USD'),
-          lotSize: z.number().describe('Tamaño del lote (1 lote = 100,000 unidades)'),
-        }),
-        execute: async ({ pair, lotSize }) => {
-          const pipValue = lotSize * 10;
-          return { pair, pipValue };
-        },
-      },
-      fetchFxRates: {
-        description: 'Obtiene tasas de cambio en tiempo real para un par de divisas.',
-        parameters: z.object({
-          pair: z.string().describe('Par de divisas, ej: GBP/JPY'),
-        }),
-        execute: async ({ pair }) => {
-          const forexData = await tools.forex.get_fx_data.function({ pair });
-          return forexData;
-        },
-      },
-      get_fx_data: forexTools.get_fx_data,
-      calculate_quant_signal: forexTools.calculate_quant_signal,
-      get_simple_forecast: forexTools.get_simple_forecast,
+      calculatePipValue: forexTools.calculate_quant_signal,
+      fetchFxRates: forexTools.get_fx_data,
       fetchTechnicalAnalysis: forexTools.fetchTechnicalAnalysis
     },
     toolChoice: "auto",
     onFinish: async ({ responseMessages }) => {
       if (session.user?.id) {
         try {
-          const responseMessagesWithoutIncompleteToolCalls =
-            sanitizeResponseMessages(responseMessages);
-
-          await saveMessages({
-            messages: responseMessagesWithoutIncompleteToolCalls.map(
-              (message) => {
-                const messageId = generateUUID();
-
-                if (message.role === 'assistant') {
-                  streamingData.appendMessageAnnotation({
-                    messageIdFromServer: messageId,
-                  });
-                }
-
-                return {
-                  id: messageId,
-                  chatId: id,
-                  role: message.role,
-                  content: message.content,
-                  createdAt: new Date(),
-                };
-              },
-            ),
-          });
-
           const toolCalls = responseMessages.filter((m): m is CoreToolMessage => 
             m.role === 'tool' && Array.isArray(m.content)
           );
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              try {
-                const toolContent = toolCall.content[0];
-                if (toolContent && 'type' in toolContent && toolContent.type === 'tool-call') {
-                  const { toolName, args } = toolContent;
-                  const typedToolName = toolName as keyof typeof tools.forex;
-                  const result = await tools.forex[typedToolName].function(args);
+              const toolContent = toolCall.content[0];
+              if (toolContent && 'type' in toolContent && toolContent.type === 'tool-call') {
+                const { toolName, args } = toolContent;
+                if (toolName in forexTools) {
+                  const typedToolName = toolName as keyof typeof forexTools;
+                  const result = await forexTools[typedToolName].function(args);
                   
                   responseMessages.push({
                     role: "tool",
@@ -441,14 +394,20 @@ export async function POST(request: Request) {
                     }]
                   } as CoreToolMessage);
                 }
-              } catch (error) {
-                console.error('Error processing tool call:', error);
-                continue;
               }
             }
           }
+
+          await saveMessages({
+            messages: responseMessages.map((message) => ({
+              ...message,
+              id: generateUUID(),
+              createdAt: new Date(),
+              chatId: id,
+            })),
+          });
         } catch (error) {
-          console.error('Failed to save chat');
+          console.error('Failed to process tool calls:', error);
         }
       }
 
