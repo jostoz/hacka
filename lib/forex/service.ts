@@ -1,4 +1,4 @@
-import { FxData, QuantSignal, Forecast, TechnicalAnalysis, ForexConfig, ForexResponse, ForexError } from './types';
+import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
 import { TIMEFRAMES, FOREX_PAIRS, ForexPair, Timeframe, isValidForexPair, isValidTimeframe } from './constants';
 
 // Mock API endpoint - replace with actual API in production
@@ -100,7 +100,7 @@ export async function generateForecast(data: FxData[]): Promise<ForexResponse<Fo
   return { success: true, data: forecast };
 }
 
-export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<TechnicalAnalysis>> {
+export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<TechnicalAnalysisData>> {
   if (data.length < 14) {
     return {
       success: false,
@@ -114,28 +114,37 @@ export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<T
   // Implement technical analysis calculations here
   // This is a placeholder implementation
   const lastPrice = data[data.length - 1].close;
-  const analysis: TechnicalAnalysis = {
-    rsi: {
-      value: 50 + (Math.random() - 0.5) * 20,
-      signal: 'neutral'
-    },
-    macd: {
-      value: (Math.random() - 0.5) * 2,
-      signal: (Math.random() - 0.5) * 2,
-      histogram: (Math.random() - 0.5) * 0.5,
-      trend: 'neutral'
-    },
-    sma: {
-      fast: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
-      slow: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
-      trend: 'neutral'
-    }
-  };
+  const rsiValue = 50 + (Math.random() - 0.5) * 20;
+  const macdValue = (Math.random() - 0.5) * 2;
+  const macdSignal = (Math.random() - 0.5) * 2;
+  const macdHistogram = (Math.random() - 0.5) * 0.5;
+  const smaFast = lastPrice * (1 + (Math.random() - 0.5) * 0.01);
+  const smaSlow = lastPrice * (1 + (Math.random() - 0.5) * 0.01);
 
-  // Update signals based on values
-  analysis.rsi.signal = analysis.rsi.value > 70 ? 'overbought' : analysis.rsi.value < 30 ? 'oversold' : 'neutral';
-  analysis.macd.trend = analysis.macd.histogram > 0 ? 'bullish' : analysis.macd.histogram < 0 ? 'bearish' : 'neutral';
-  analysis.sma.trend = analysis.sma.fast > analysis.sma.slow ? 'bullish' : analysis.sma.fast < analysis.sma.slow ? 'bearish' : 'neutral';
+  const analysis: TechnicalAnalysisData = {
+    pair: 'EUR/USD',
+    timestamp: Date.now(),
+    signals: [{
+      pair: 'EUR/USD',
+      signal: macdHistogram > 0 ? 'buy' : macdHistogram < 0 ? 'sell' : 'hold',
+      confidence: Math.min(Math.abs(rsiValue - 50) / 50, 1),
+      positionSize: 1000,
+      stopLoss: smaSlow * 0.98,
+      justification: `RSI: ${rsiValue.toFixed(2)}, MACD: ${macdHistogram.toFixed(4)}`
+    }],
+    historicalData: data,
+    indicators: {
+      rsi: [rsiValue],
+      macd: [{
+        macdLine: macdValue,
+        signalLine: macdSignal,
+        histogram: macdHistogram,
+        trend: macdHistogram > 0 ? 'bullish' : macdHistogram < 0 ? 'bearish' : 'neutral'
+      }],
+      sma: [smaFast, smaSlow]
+    },
+    summary: `Analysis shows ${macdHistogram > 0 ? 'bullish' : 'bearish'} momentum with RSI at ${rsiValue.toFixed(2)}`
+  };
 
   return { success: true, data: analysis };
 } 
