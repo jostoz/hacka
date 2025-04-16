@@ -407,15 +407,20 @@ export async function POST(request: Request) {
           const toolCalls = responseMessages.filter(m => m.role === 'tool');
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              const toolName = toolCall.name as keyof typeof tools.forex;
-              const args = JSON.parse(toolCall.content);
-              const result = await tools.forex[toolName].function(args);
-              
-              responseMessages.push({
-                role: "tool",
-                name: toolName,
-                content: JSON.stringify(result),
-              });
+              if ('function_call' in toolCall) {
+                const toolName = toolCall.function_call.name as keyof typeof tools.forex;
+                const args = JSON.parse(toolCall.function_call.arguments);
+                const result = await tools.forex[toolName].function(args);
+                
+                responseMessages.push({
+                  role: "tool",
+                  content: JSON.stringify(result),
+                  function_call: {
+                    name: toolName,
+                    arguments: JSON.stringify(args)
+                  }
+                });
+              }
             }
           }
         } catch (error) {
