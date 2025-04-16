@@ -80,9 +80,10 @@ function calculateIndicators(data: FxData[]) {
 
 // Actualizar fetchTechnicalAnalysisFromAPI
 async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAnalysisData> {
-  // Simular datos históricos
-  const historicalData = Array.from({ length: 100 }, (_, i) => ({
-    timestamp: Date.now() - (i * 60000),
+  // Generar datos históricos para FxData
+  const fxData: FxData[] = Array.from({ length: 100 }, (_, i) => ({
+    pair,
+    timestamp: new Date(Date.now() - (i * 60000)).toISOString(),
     open: 1.2000 + Math.random() * 0.0100,
     high: 1.2050 + Math.random() * 0.0100,
     low: 1.1950 + Math.random() * 0.0100,
@@ -90,7 +91,17 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
     volume: Math.floor(Math.random() * 1000000)
   }));
 
-  const { rsi, macd, sma } = calculateIndicators(historicalData);
+  // Generar datos históricos para el gráfico
+  const historicalData = fxData.map(d => ({
+    timestamp: new Date(d.timestamp).getTime(),
+    open: d.open,
+    high: d.high,
+    low: d.low,
+    close: d.close,
+    volume: d.volume
+  }));
+
+  const { rsi, macd, sma } = calculateIndicators(fxData);
   
   if (!macd?.length || !rsi?.length || !sma?.length) {
     throw new Error('Failed to calculate indicators');
@@ -104,29 +115,34 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
     throw new Error('Invalid indicator values');
   }
 
+  const histogram = lastMacd.histogram || 0;
+
   return {
     pair,
     timestamp: Date.now(),
     signals: [{
       pair,
-      signal: lastMacd.histogram > 0 ? 'buy' : lastMacd.histogram < 0 ? 'sell' : 'hold',
+      signal: histogram > 0 ? 'buy' : histogram < 0 ? 'sell' : 'hold',
       confidence: Math.min(Math.abs(lastRsi - 50) / 50, 1),
       positionSize: 1000,
       stopLoss: lastSma * 0.98,
-      justification: `RSI: ${lastRsi.toFixed(2)}, MACD: ${lastMacd.histogram.toFixed(4)}`
+      justification: `RSI: ${lastRsi.toFixed(2)}, MACD: ${histogram.toFixed(4)}`
     }],
     historicalData,
     indicators: {
       rsi: rsi,
-      macd: macd.map((m) => ({
-        macdLine: m.MACD,
-        signalLine: m.signal,
-        histogram: m.histogram,
-        trend: m.histogram > 0 ? 'bullish' : m.histogram < 0 ? 'bearish' : 'neutral'
-      })),
+      macd: macd.map((m) => {
+        const hist = m.histogram || 0;
+        return {
+          macdLine: m.MACD || 0,
+          signalLine: m.signal || 0,
+          histogram: hist,
+          trend: hist > 0 ? 'bullish' : hist < 0 ? 'bearish' : 'neutral'
+        };
+      }),
       sma
     },
-    summary: `Analysis for ${pair} shows ${lastMacd.histogram > 0 ? 'bullish' : 'bearish'} momentum`
+    summary: `Analysis for ${pair} shows ${histogram > 0 ? 'bullish' : 'bearish'} momentum`
   };
 }
 
