@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { forexTools } from '@/lib/tools/forex';
 import { SignalCard } from './SignalCard';
+import type { Signal } from '@/lib/types/types';
 
 // Constantes para las opciones del formulario
 const TIMEFRAME_OPTIONS = [
@@ -41,9 +42,9 @@ export function ForexForm() {
   });
 
   // Estados para los resultados
-  const [signal, setSignal] = useState(null);
-  const [forecast, setForecast] = useState(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState(null);
+  const [signal, setSignal] = useState<Signal | null>(null);
+  const [forecast, setForecast] = useState<any | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +69,18 @@ export function ForexForm() {
             capital: config.capital,
             risk_percent: config.riskPercent
           });
-          setSignal(tradingSignal.data);
+          
+          // Convert QuantSignal to Signal
+          const signalData: Signal = {
+            pair: config.pair,
+            signal: tradingSignal.data.signal,
+            confidence: tradingSignal.data.confidence || 0.5,
+            positionSize: tradingSignal.data.positionSize || 0,
+            stopLoss: tradingSignal.data.stopLoss || 0,
+            justification: `Señal generada basada en análisis cuantitativo para ${config.pair} en timeframe ${config.timeframe}`
+          };
+          
+          setSignal(signalData);
           break;
 
         case 'forecast':
@@ -85,8 +97,9 @@ export function ForexForm() {
           setTechnicalAnalysis(analysis.data);
           break;
       }
-    } catch (err) {
-      setError(err.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -98,7 +111,6 @@ export function ForexForm() {
         <div className="space-y-2">
           <Label htmlFor="pair">Par de Divisas</Label>
           <Select
-            id="pair"
             value={config.pair}
             onValueChange={(value) => setConfig({ ...config, pair: value })}
           >
@@ -113,7 +125,6 @@ export function ForexForm() {
         <div className="space-y-2">
           <Label htmlFor="timeframe">Marco Temporal</Label>
           <Select
-            id="timeframe"
             value={config.timeframe}
             onValueChange={(value) => setConfig({ ...config, timeframe: value })}
           >
@@ -204,15 +215,7 @@ export function ForexForm() {
       {signal && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Señal de Trading</h3>
-          <SignalCard
-            pair={signal.pair}
-            signal={signal.signal}
-            confidence={signal.confidence}
-            positionSize={signal.positionSize}
-            stopLoss={signal.stopLoss}
-            takeProfit={signal.takeProfit}
-            riskRewardRatio={signal.riskRewardRatio}
-          />
+          <SignalCard signal={signal} />
         </div>
       )}
 
