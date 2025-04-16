@@ -13,12 +13,19 @@ interface UseMarketDataResult {
   refetch: () => Promise<void>;
 }
 
-export function useMarketData(params: MarketDataParams): UseMarketDataResult {
+export function useMarketData(params?: MarketDataParams): UseMarketDataResult {
   const [data, setData] = useState<MarketDataResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
+    if (!params) {
+      setData(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -48,10 +55,10 @@ export function useMarketData(params: MarketDataParams): UseMarketDataResult {
   useEffect(() => {
     fetchData();
   }, [
-    params.symbol,
-    params.interval,
-    params.range,
-    params.source
+    params?.symbol,
+    params?.interval,
+    params?.range,
+    params?.source
   ]);
 
   return {
