@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
-import type { Signal, Forecast, TechnicalAnalysisData, TechnicalAnalysisBlock } from '@/lib/types/types';
+import type { Signal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
 
 interface ForexConfig {
   pair: string;
@@ -18,30 +18,17 @@ interface ForexConfig {
 }
 
 // Define custom types that match the actual data structure from forexTools
-interface ForexToolSignal extends Omit<Signal, 'type' | 'value'> {
-  takeProfit?: number;
-  riskRewardRatio?: number;
+interface ForexToolSignal extends Signal {
+  type?: string;
+  value?: string | number;
 }
 
-interface ForexToolForecast extends Omit<Forecast, 'prediction' | 'confidence' | 'timestamp'> {
-  predictions: Array<{
-    timestamp: number;
-    value: number;
-    confidenceInterval: [number, number];
-  }>;
+interface ForexToolForecast extends Forecast {
+  type?: string;
 }
 
-interface ForexToolTechnicalAnalysis {
-  pair: string;
-  timestamp: number;
-  summary: string;
-  signals: ForexToolSignal[];
-  historicalData: any;
-  indicators: {
-    rsi: number[];
-    macd: any[];
-    sma: number[];
-  };
+interface ForexToolTechnicalAnalysis extends TechnicalAnalysisData {
+  type?: string;
 }
 
 const TIMEFRAME_OPTIONS = [
@@ -80,7 +67,7 @@ export function ForexAnalysis() {
 
   const fetchMarketData = async () => {
     try {
-      const data = await forexTools.get_fx_data.function({
+      const data = await forexTools.get_fx_data.execute({
         pair: config.pair,
         timeframe: config.timeframe,
         periods: config.periods
@@ -98,7 +85,7 @@ export function ForexAnalysis() {
     setLoading(true);
     try {
       const data = marketData || await fetchMarketData();
-      const tradingSignal = await forexTools.calculate_quant_signal.function({
+      const tradingSignal = await forexTools.calculate_quant_signal.execute({
         data: data.data,
         capital: config.capital,
         risk_percent: config.riskPercent
@@ -116,7 +103,7 @@ export function ForexAnalysis() {
     setLoading(true);
     try {
       const data = marketData || await fetchMarketData();
-      const forecastData = await forexTools.get_simple_forecast.function({
+      const forecastData = await forexTools.get_simple_forecast.execute({
         data: data.data
       });
       setForecast(forecastData as { type: string; data: ForexToolForecast });
@@ -131,7 +118,7 @@ export function ForexAnalysis() {
   const generateTechnicalAnalysis = async () => {
     setLoading(true);
     try {
-      const analysis = await forexTools.fetchTechnicalAnalysis.function({
+      const analysis = await forexTools.fetchTechnicalAnalysis.execute({
         pair: config.pair
       });
       setTechnicalAnalysis(analysis as { type: string; data: ForexToolTechnicalAnalysis });

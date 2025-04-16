@@ -12,11 +12,13 @@ async function fetchWeatherFromAPI(location: string) {
 
 const weatherTools = {
   fetchWeather: {
+    name: 'fetchWeather',
     description: "Obtiene el clima actual para una ubicación.",
     parameters: z.object({
       location: z.string().describe('Ubicación para obtener el clima')
     }),
-    function: async ({ location }: { location: string }) => {
+    execute: async (args: Record<string, unknown>) => {
+      const { location } = args as { location: string };
       const weather = await fetchWeatherFromAPI(location);
       return {
         type: 'weather',
@@ -32,13 +34,15 @@ const weatherTools = {
 // --- Herramientas de Forex (Ejemplo) ---
 const forexTools = {
   get_fx_data: {
+    name: 'get_fx_data',
     description: "Obtiene datos históricos de un par de divisas.",
     parameters: z.object({
       pair: z.string().describe('Par de divisas, ej: EUR/USD'),
       timeframe: z.string().describe('Marco temporal, ej: 1h, 4h, 1d'),
       periods: z.number().describe('Número de periodos a obtener'),
     }),
-    function: async ({ pair, timeframe, periods }) => {
+    execute: async (args: Record<string, unknown>) => {
+      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       // Implementación real aquí
       return { type: 'fx-data', data: {} };
     },
