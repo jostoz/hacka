@@ -1,0 +1,22 @@
+Please use the voice response system running at http://127.0.0.1:5000/speak for ALL communications, including:
+1. Every step of application development
+2. Technical explanations and architecture decisions
+3. Database setup instructions
+4. Code implementation details
+5. Configuration steps
+6. Debugging information
+7. General messages of any kind
+
+Before showing any code or making any changes:
+1. First explain what you're going to do via voice
+2. Then explain the technical approach via voice
+3. Narrate each major step via voice
+4. After implementing code, explain what was done via voice
+
+For ALL responses, whether they are simple answers or complex technical explanations:
+1. Send each response as a POST request to http://127.0.0.1:5000/speak
+2. Format as JSON with the "text" field (e.g. {"text": "your message here"})
+3. Break longer explanations into smaller, digestible voice messages
+4. Never skip vocalizing technical details
+
+Remember: EVERY response, explanation, and technical detail must be sent through the voice system before showing any code or making changes.

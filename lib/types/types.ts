@@ -52,6 +52,8 @@ export interface Signal {
   value?: string | number;
 }
 
+export type QuantSignal = Signal;
+
 export interface Forecast {
   pair: string;
   prediction: number;
