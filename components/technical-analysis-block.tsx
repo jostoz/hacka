@@ -12,7 +12,6 @@ import {
   ColorType,
   LineStyle,
   CrosshairMode,
-  AreaSeries,
   type Time,
 } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
@@ -30,12 +29,12 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 400, // Increased height for better visibility
+      height: 500,
       layout: {
         background: { type: ColorType.Solid, color: '#ffffff' },
         textColor: '#333',
         fontSize: 12,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'geist, sans-serif',
       },
       grid: {
         vertLines: { color: '#f0f0f0', style: LineStyle.Dotted },
@@ -47,30 +46,44 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
           color: '#9B9B9B',
           width: 1,
           style: LineStyle.Dashed,
+          labelBackgroundColor: '#9B9B9B',
         },
         horzLine: {
           color: '#9B9B9B',
           width: 1,
           style: LineStyle.Dashed,
+          labelBackgroundColor: '#9B9B9B',
         },
       },
       timeScale: {
         borderColor: '#D1D4DC',
         timeVisible: true,
         secondsVisible: false,
-      }
+        fixLeftEdge: true,
+        fixRightEdge: true,
+      },
+      rightPriceScale: {
+        borderColor: '#D1D4DC',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.2,
+        },
+      },
     });
 
-    // Candlestick series with improved styling
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
       wickUpColor: '#26a69a',
       wickDownColor: '#ef5350',
+      priceFormat: {
+        type: 'price',
+        precision: 5,
+        minMove: 0.00001,
+      },
     });
 
-    // Set candlestick data
     candlestickSeries.setData(
       data.historicalData.map(d => ({
         time: (d.timestamp / 1000) as Time,
@@ -81,7 +94,6 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       }))
     );
 
-    // Volume series with significance highlighting
     const volumeSeries = chart.addSeries(HistogramSeries, {
       color: '#26a69a',
       priceScaleId: 'volume',
@@ -94,7 +106,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
 
     chart.priceScale('volume').applyOptions({
       scaleMargins: {
-        top: 0.8,
+        top: 0.85,
         bottom: 0,
       },
       visible: true,
@@ -108,64 +120,81 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       }))
     );
 
-    // RSI with improved visibility
-    const rsiSeries = chart.addSeries(LineSeries, {
-      color: '#2962FF',
-      lineWidth: 2,
-      priceScaleId: 'rsi',
-      priceFormat: {
-        type: 'price',
-        precision: 2,
-      },
-    });
-
-    chart.priceScale('rsi').applyOptions({
-      scaleMargins: {
-        top: 0.8,
-        bottom: 0,
-      },
-      visible: true,
-    });
-
     if (data.indicators.rsi.length > 0) {
-      rsiSeries.setData(
-        data.indicators.rsi.map((value, index) => ({
-          time: (data.historicalData[index].timestamp / 1000) as Time,
-          value,
-        }))
-      );
+      const rsiSeries = chart.addSeries(LineSeries, {
+        color: '#2962FF',
+        lineWidth: 2,
+        priceScaleId: 'rsi',
+        priceFormat: {
+          type: 'price',
+          precision: 2,
+        },
+      });
+
+      const overboughtLine = chart.addSeries(LineSeries, {
+        color: '#ef5350',
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        priceScaleId: 'rsi',
+      });
+
+      const oversoldLine = chart.addSeries(LineSeries, {
+        color: '#26a69a',
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        priceScaleId: 'rsi',
+      });
+
+      chart.priceScale('rsi').applyOptions({
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        visible: true,
+      });
+
+      const rsiData = data.indicators.rsi.map((value, index) => ({
+        time: (data.historicalData[index].timestamp / 1000) as Time,
+        value,
+      }));
+
+      rsiSeries.setData(rsiData);
+      
+      const timeRange = data.historicalData.map(d => d.timestamp / 1000 as Time);
+      overboughtLine.setData(timeRange.map(time => ({ time, value: 70 })));
+      oversoldLine.setData(timeRange.map(time => ({ time, value: 30 })));
     }
 
-    // MACD with trend highlighting
-    const macdSeries = chart.addSeries(HistogramSeries, {
-      color: '#2962FF',
-      priceScaleId: 'macd',
-    });
-
-    chart.priceScale('macd').applyOptions({
-      scaleMargins: {
-        top: 0.6,
-        bottom: 0.2,
-      },
-      visible: true,
-    });
-
     if (data.indicators.macd.length > 0) {
+      const macdSeries = chart.addSeries(HistogramSeries, {
+        priceScaleId: 'macd',
+      });
+
+      chart.priceScale('macd').applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0.3,
+        },
+        visible: true,
+      });
+
       macdSeries.setData(
         data.indicators.macd.map((value, index) => ({
           time: (data.historicalData[index].timestamp / 1000) as Time,
           value: value.histogram,
-          color: value.histogram > 0 ? '#26a69a' : '#ef5350',
+          color: value.histogram > 0 
+            ? value.histogram > value.macdLine ? '#1B5E20' : '#66BB6A' 
+            : value.histogram < value.macdLine ? '#B71C1C' : '#EF5350',
         }))
       );
     }
 
-    // Add support/resistance levels if available
     if (data.levels?.support) {
       const supportLine = chart.addSeries(LineSeries, {
         color: '#2196F3',
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
+        title: 'Soporte',
       });
       
       supportLine.setData([
@@ -179,6 +208,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
         color: '#FF5252',
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
+        title: 'Resistencia',
       });
       
       resistanceLine.setData([
@@ -187,12 +217,24 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
       ]);
     }
 
-    // Fit content and handle cleanup
     chart.timeScale().fitContent();
-    return () => chart.remove();
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
   }, [data.historicalData, data.indicators, data.levels]);
 
-  // Calculate trend strength
   const trendStrength = data.indicators.macd[data.indicators.macd.length - 1]?.histogram || 0;
   const trend = trendStrength > 0 ? 'Alcista' : trendStrength < 0 ? 'Bajista' : 'Neutral';
   const strength = Math.min(Math.abs(trendStrength * 10), 10).toFixed(1);
