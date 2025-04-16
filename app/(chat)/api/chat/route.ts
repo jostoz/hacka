@@ -29,6 +29,7 @@ import {
 
 import { generateTitleFromUserMessage } from '../../actions';
 import { tools } from '@/lib/tools';
+import { forexTools } from '@/lib/tools/forex';
 
 export const maxDuration = 60;
 
@@ -369,7 +370,10 @@ export async function POST(request: Request) {
           return forexData;
         },
       },
-      fetchTechnicalAnalysis: tools.forex.fetchTechnicalAnalysis,
+      get_fx_data: forexTools.get_fx_data,
+      calculate_quant_signal: forexTools.calculate_quant_signal,
+      get_simple_forecast: forexTools.get_simple_forecast,
+      fetchTechnicalAnalysis: forexTools.fetchTechnicalAnalysis
     },
     tool_choice: "auto",
     onFinish: async ({ responseMessages }) => {
