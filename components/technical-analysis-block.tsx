@@ -50,7 +50,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     // Establecer los datos de las velas
     candlestickSeries.setData(
       data.historicalData.map(d => ({
-        time: d.timestamp as UTCTimestamp,
+        time: (d.timestamp / 1000) as Time,  // Convertir a segundos y usar como Time
         open: d.open,
         high: d.high,
         low: d.low,
@@ -96,7 +96,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     if (data.indicators.rsi.length > 0) {
       rsiSeries.setData(
         data.indicators.rsi.map((value, index) => ({
-          time: data.historicalData[index].timestamp as UTCTimestamp,
+          time: (data.historicalData[index].timestamp / 1000) as Time,  // Convertir a segundos y usar como Time
           value,
         }))
       );
@@ -106,7 +106,7 @@ export function TechnicalAnalysisBlock({ data }: TechnicalAnalysisBlockProps) {
     if (data.indicators.macd.length > 0) {
       macdSeries.setData(
         data.indicators.macd.map((value, index) => ({
-          time: data.historicalData[index].timestamp as UTCTimestamp,
+          time: (data.historicalData[index].timestamp / 1000) as Time,  // Convertir a segundos y usar como Time
           value: value.histogram,
           color: value.histogram > 0 ? '#26a69a' : '#ef5350',
         }))

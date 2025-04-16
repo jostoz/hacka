@@ -24,9 +24,9 @@ interface IndicatorResult {
 // Funciones de API
 async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData[]> {
   // Implementar llamada a API real
+  const timestamp = Date.now(); // Usar timestamp numérico
   return [{
-    pair,
-    timestamp: new Date().toISOString(),
+    timestamp,
     open: 0,
     high: 0,
     low: 0,
@@ -39,7 +39,7 @@ function calculateSignal(data: FxData[], capital: number, riskPercent: number): 
   const lastPrice = data[data.length - 1].close;
   
   return {
-    pair: data[0].pair,
+    pair: 'EUR/USD', // Par por defecto si no está en FxData
     signal: 'hold',
     confidence: 0.5,
     positionSize: capital * (riskPercent / 100),
@@ -54,8 +54,8 @@ function generateForecast(data: FxData[]): Forecast {
   const lastPrice = data[data.length - 1].close;
   
   return {
-    pair: data[0].pair,
-    prediction: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
+    pair: 'EUR/USD', // Par por defecto si no está en FxData
+    nextPrice: lastPrice * (1 + (Math.random() - 0.5) * 0.01), // Usar nextPrice en lugar de prediction
     confidence: 0.75,
     timestamp: new Date().toISOString()
   };
@@ -82,8 +82,7 @@ function calculateIndicators(data: FxData[]) {
 async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAnalysisData> {
   // Generar datos históricos para FxData
   const fxData: FxData[] = Array.from({ length: 100 }, (_, i) => ({
-    pair,
-    timestamp: new Date(Date.now() - (i * 60000)).toISOString(),
+    timestamp: Date.now() - (i * 60000), // Usar timestamp numérico
     open: 1.2000 + Math.random() * 0.0100,
     high: 1.2050 + Math.random() * 0.0100,
     low: 1.1950 + Math.random() * 0.0100,
@@ -93,7 +92,7 @@ async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAna
 
   // Generar datos históricos para el gráfico
   const historicalData = fxData.map(d => ({
-    timestamp: new Date(d.timestamp).getTime(),
+    timestamp: d.timestamp,
     open: d.open,
     high: d.high,
     low: d.low,

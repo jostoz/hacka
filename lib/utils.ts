@@ -300,6 +300,7 @@ export const createForexToolMessage = (
     content: [{
       type: 'tool-result',
       toolCallId: toolName,
+      toolName: toolName,
       result: result
     }]
   } as CoreToolMessage;
