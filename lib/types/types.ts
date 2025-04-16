@@ -8,25 +8,26 @@ export type MessageType =
   | 'forecast' 
   | 'technical-analysis' 
   | 'weather' 
-  | 'text';
+  | 'text'
+  | 'tool-result';
 
 // Base interfaces
 export interface BaseTool {
   name: string;
   description: string;
-  execute: (args: Record<string, unknown>) => Promise<ToolResult>;
+  execute: (args: Record<string, unknown>) => Promise<ToolResult<unknown>>;
 }
 
-export interface ToolResult {
-  type: MessageType;
-  data: unknown;
+export interface ToolResult<T = unknown> {
+  type: MessageType | string;
+  data: T;
 }
 
 export interface ToolResultPart {
   type: 'tool-result';
   toolCallId: string;
   toolName: string;
-  result: ToolResult;
+  result: ToolResult<unknown>;
   isError?: boolean;
 }
 
@@ -72,6 +73,15 @@ export interface TechnicalAnalysisData {
   timestamp: string;
   indicators: TechnicalAnalysisBlock[];
   summary: string;
+}
+
+// For TypeScript type checking in route.ts
+export interface ToolCallMessage {
+  role: 'tool';
+  function_call: {
+    name: string;
+    arguments: string;
+  };
 }
 
 // Re-export CoreToolMessage from ai package

@@ -411,7 +411,7 @@ export async function POST(request: Request) {
                   type: 'tool-result',
                   toolCallId: toolName,
                   toolName: toolName,
-                  result: result
+                  result: result as ToolResult<unknown>
                 };
 
                 const toolMessage: CoreToolMessage = {
