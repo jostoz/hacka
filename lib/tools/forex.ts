@@ -168,6 +168,11 @@ export const forexTools = {
   get_fx_data: {
     name: 'get_fx_data',
     description: "Obtiene datos históricos de un par de divisas.",
+    parameters: z.object({
+      pair: z.string().describe("Par de divisas a analizar"),
+      timeframe: z.string().describe("Marco temporal para el análisis"),
+      periods: z.number().describe("Número de períodos a obtener")
+    }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<FxData>> => {
       const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       const data = await getFxDataFromAPI(pair, timeframe, periods);
@@ -181,6 +186,11 @@ export const forexTools = {
   calculate_quant_signal: {
     name: 'calculate_quant_signal',
     description: "Calcula la señal cuantitativa basada en los datos.",
+    parameters: z.object({
+      data: z.any().describe("Datos históricos del par de divisas"),
+      capital: z.number().describe("Capital disponible para operar"),
+      risk_percent: z.number().describe("Porcentaje de riesgo por operación")
+    }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<QuantSignal>> => {
       const { data, capital, risk_percent } = args as { data: any; capital: number; risk_percent: number };
       const signal = calculateSignal(data, capital, risk_percent);
@@ -194,6 +204,9 @@ export const forexTools = {
   get_simple_forecast: {
     name: 'get_simple_forecast',
     description: "Genera un pronóstico simple basado en los datos.",
+    parameters: z.object({
+      data: z.any().describe("Datos históricos para generar el pronóstico")
+    }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<Forecast>> => {
       const { data } = args as { data: any };
       const forecast = generateForecast(data);
@@ -207,6 +220,9 @@ export const forexTools = {
   fetchTechnicalAnalysis: {
     name: 'fetchTechnicalAnalysis',
     description: "Realiza análisis técnico de un par de divisas.",
+    parameters: z.object({
+      pair: z.string().describe("Par de divisas a analizar")
+    }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
       const { pair } = args as { pair: string };
       const result = await fetchTechnicalAnalysisFromAPI(pair);
