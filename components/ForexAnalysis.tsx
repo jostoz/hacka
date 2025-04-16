@@ -67,8 +67,9 @@ export function ForexAnalysis() {
       });
       setMarketData(data);
       return data;
-    } catch (err) {
-      setError('Error al obtener datos: ' + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError('Error al obtener datos: ' + errorMessage);
       throw err;
     }
   };
@@ -84,8 +85,9 @@ export function ForexAnalysis() {
         risk_percent: config.riskPercent
       });
       setSignal(tradingSignal);
-    } catch (err) {
-      setError('Error al generar señal: ' + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError('Error al generar señal: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -100,8 +102,9 @@ export function ForexAnalysis() {
         data: data.data
       });
       setForecast(forecastData);
-    } catch (err) {
-      setError('Error al generar pronóstico: ' + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError('Error al generar pronóstico: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -115,8 +118,9 @@ export function ForexAnalysis() {
         pair: config.pair
       });
       setTechnicalAnalysis(analysis);
-    } catch (err) {
-      setError('Error en análisis técnico: ' + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError('Error en análisis técnico: ' + errorMessage);
     } finally {
       setLoading(false);
     }
