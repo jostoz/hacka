@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import type { BaseTool, TechnicalAnalysisData, Signal } from '@/lib/types/types';
 import { RSI, MACD, SMA } from 'technicalindicators';
+import { FOREX_PAIRS, TIMEFRAMES } from '@/lib/forex/constants';
 
 // Tipos de datos
 interface FxData {
@@ -15,6 +16,22 @@ interface FxData {
     close: number;
     volume: number;
   }>;
+}
+
+interface MACDResult {
+  MACD: number[];
+  signal: number[];
+  histogram: number[];
+}
+
+interface IndicatorResult {
+  rsi: number[];
+  macd: Array<{
+    value: number;
+    signal: number;
+    histogram: number;
+  }>;
+  sma: number[];
 }
 
 interface QuantSignal {
@@ -91,36 +108,68 @@ function calculateIndicators(data: Array<{ value: number }>) {
 }
 
 // Actualizar fetchTechnicalAnalysisFromAPI
-async function fetchTechnicalAnalysisFromAPI(pair: string) {
+async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAnalysisData> {
   const response = await fetch(`https://api.example.com/data?pair=${pair}`);
   const rawData = await response.json();
 
-  const { rsi, macd, sma } = calculateIndicators(rawData);
+  const { rsi, macd, sma } = calculateIndicators(rawData) as IndicatorResult;
+  
+  // Ensure we have data
+  if (!macd?.length || !rsi?.length || !sma?.length) {
+    throw new Error('Failed to calculate indicators');
+  }
+
+  const lastMacd = macd[macd.length - 1];
+  const lastRsi = rsi[rsi.length - 1];
+  const lastSma = sma[sma.length - 1];
+
+  if (!lastMacd || !lastRsi || typeof lastSma !== 'number') {
+    throw new Error('Invalid indicator values');
+  }
 
   return {
+    pair,
+    timestamp: Date.now(),
     signals: [{
       pair,
-      signal: macd[macd.length - 1].histogram > 0 ? 'buy' : 'sell',
-      confidence: Math.min(Math.abs(rsi[rsi.length - 1] - 50) / 50, 1), // Normalizado 0-1
+      signal: lastMacd.histogram > 0 ? 'buy' as const : lastMacd.histogram < 0 ? 'sell' as const : 'hold' as const,
+      confidence: Math.min(Math.abs(lastRsi - 50) / 50, 1),
       positionSize: 1000,
-      stopLoss: sma[sma.length - 1] * 0.98, // 2% bajo SMA
-      justification: `RSI: ${rsi[rsi.length - 1].toFixed(2)}, MACD: ${macd[macd.length - 1].histogram.toFixed(4)}`,
+      stopLoss: lastSma * 0.98,
+      justification: `RSI: ${lastRsi.toFixed(2)}, MACD: ${lastMacd.histogram.toFixed(4)}`,
     }],
-    historicalData: rawData,
-    indicators: { rsi, macd, sma }, // Para usar en gráficos
+    historicalData: rawData.map((d: {
+      timestamp: string | number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume?: number;
+    }) => ({
+      ...d,
+      timestamp: typeof d.timestamp === 'string' ? new Date(d.timestamp).getTime() : d.timestamp
+    })),
+    indicators: {
+      rsi,
+      macd: macd.map((m) => ({
+        macdLine: m.value,
+        signalLine: m.signal,
+        histogram: m.histogram,
+        trend: m.histogram > 0 ? 'bullish' as const : m.histogram < 0 ? 'bearish' as const : 'neutral' as const
+      })),
+      sma
+    },
+    summary: `Analysis for ${pair} shows ${lastMacd.histogram > 0 ? 'bullish' : 'bearish'} momentum`
   };
 }
 
 // Definición de herramientas
 export const forexTools = {
   get_fx_data: {
+    name: 'get_fx_data',
     description: "Obtiene datos históricos de un par de divisas.",
-    parameters: z.object({
-      pair: z.string().describe('Par de divisas, ej: EUR/USD'),
-      timeframe: z.string().describe('Marco temporal, ej: 1h, 4h, 1d'),
-      periods: z.number().describe('Número de periodos a obtener')
-    }),
-    function: async ({ pair, timeframe, periods }): Promise<ToolResult<FxData>> => {
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<FxData>> => {
+      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       const data = await getFxDataFromAPI(pair, timeframe, periods);
       return {
         type: 'fx-data',
@@ -130,13 +179,10 @@ export const forexTools = {
   },
 
   calculate_quant_signal: {
+    name: 'calculate_quant_signal',
     description: "Calcula la señal cuantitativa basada en los datos.",
-    parameters: z.object({
-      data: z.any().describe('Datos históricos del par'),
-      capital: z.number().describe('Capital disponible'),
-      risk_percent: z.number().describe('Porcentaje de riesgo')
-    }),
-    function: async ({ data, capital, risk_percent }) => {
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<QuantSignal>> => {
+      const { data, capital, risk_percent } = args as { data: any; capital: number; risk_percent: number };
       const signal = calculateSignal(data, capital, risk_percent);
       return {
         type: 'quant-signal',
@@ -146,11 +192,10 @@ export const forexTools = {
   },
 
   get_simple_forecast: {
+    name: 'get_simple_forecast',
     description: "Genera un pronóstico simple basado en los datos.",
-    parameters: z.object({
-      data: z.any().describe('Datos históricos del par')
-    }),
-    function: async ({ data }) => {
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<Forecast>> => {
+      const { data } = args as { data: any };
       const forecast = generateForecast(data);
       return {
         type: 'forecast',
@@ -160,11 +205,10 @@ export const forexTools = {
   },
 
   fetchTechnicalAnalysis: {
+    name: 'fetchTechnicalAnalysis',
     description: "Realiza análisis técnico de un par de divisas.",
-    parameters: z.object({
-      pair: z.string().describe('Par de divisas, ej: EUR/USD')
-    }),
-    function: async ({ pair }) => {
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
+      const { pair } = args as { pair: string };
       const result = await fetchTechnicalAnalysisFromAPI(pair);
       return {
         type: 'technical-analysis',
@@ -177,16 +221,16 @@ export const forexTools = {
 const validateForexParams = (params: any) => {
   const errors: string[] = [];
   
-  if (!VALID_PAIRS.includes(params.pair)) {
+  if (!FOREX_PAIRS.includes(params.pair)) {
     errors.push(`Par inválido: ${params.pair}`);
   }
   
-  if (!VALID_TIMEFRAMES.includes(params.timeframe)) {
+  if (!TIMEFRAMES.includes(params.timeframe)) {
     errors.push(`Timeframe inválido: ${params.timeframe}`);
   }
   
   if (params.periods < 10 || params.periods > 1000) {
-    errors.push('Períodos deben estar entre 10 y 1000');
+    errors.push(`Número de períodos inválido: ${params.periods}`);
   }
   
   return errors;

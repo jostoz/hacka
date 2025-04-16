@@ -70,7 +70,7 @@ export interface TechnicalAnalysisBlock {
 
 export interface TechnicalAnalysisData {
   pair: string;
-  timestamp: string;
+  timestamp: number;
   signals: Array<{
     pair: string;
     signal: 'buy' | 'sell' | 'hold';
@@ -93,6 +93,7 @@ export interface TechnicalAnalysisData {
       macdLine: number;
       signalLine: number;
       histogram: number;
+      trend?: 'bullish' | 'bearish' | 'neutral';
     }>;
     sma: number[];
   };

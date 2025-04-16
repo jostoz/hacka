@@ -33,7 +33,7 @@ interface ForexToolForecast extends Omit<Forecast, 'prediction' | 'confidence' |
 
 interface ForexToolTechnicalAnalysis {
   pair: string;
-  timestamp: string;
+  timestamp: number;
   summary: string;
   signals: ForexToolSignal[];
   historicalData: any;
