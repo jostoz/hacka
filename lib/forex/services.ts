@@ -1,4 +1,4 @@
-import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexToolResponse } from './types';
+import { FxData, QuantSignal, Forecast, TechnicalAnalysisData, ForexResponse } from './types';
 
 // API endpoint for forex data
 const FOREX_API_ENDPOINT = process.env.FOREX_API_ENDPOINT || 'https://api.example.com/forex';
@@ -10,7 +10,7 @@ export async function getFxData(
   pair: string,
   timeframe: string,
   periods: number
-): Promise<ForexToolResponse<FxData[]>> {
+): Promise<ForexResponse<FxData[]>> {
   try {
     const response = await fetch(
       `${FOREX_API_ENDPOINT}/historical?pair=${pair}&timeframe=${timeframe}&periods=${periods}`
@@ -40,7 +40,7 @@ export function calculateQuantSignal(
   data: FxData[],
   capital: number,
   riskPercentage: number
-): ForexToolResponse<QuantSignal> {
+): ForexResponse<QuantSignal> {
   try {
     if (data.length < 2) {
       throw new Error('Insufficient data points for signal calculation');
@@ -80,7 +80,7 @@ export function calculateQuantSignal(
 /**
  * Generates a simple price forecast using linear regression
  */
-export function getSimpleForecast(data: FxData[]): ForexToolResponse<Forecast> {
+export function getSimpleForecast(data: FxData[]): ForexResponse<Forecast> {
   try {
     if (data.length < 5) {
       throw new Error('Insufficient data points for forecast');
@@ -123,7 +123,7 @@ export function getSimpleForecast(data: FxData[]): ForexToolResponse<Forecast> {
 /**
  * Performs technical analysis on the forex data
  */
-export function getTechnicalAnalysis(data: FxData[]): ForexToolResponse<TechnicalAnalysisData> {
+export function getTechnicalAnalysis(data: FxData[]): ForexResponse<TechnicalAnalysisData> {
   try {
     if (data.length < 14) {
       throw new Error('Insufficient data points for technical analysis');
