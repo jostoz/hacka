@@ -1,4 +1,5 @@
-import { CapitalSession, CapitalSessionConfig, CapitalSessionConfigSchema } from '@/lib/types/capital';
+import type { CapitalSession, CapitalSessionConfig } from '@/lib/types/capital';
+import { CapitalSessionConfigSchema } from '@/lib/types/capital';
 import { ForexApplicationError } from '@/lib/types/errors';
 
 export class CapitalAuthService {
