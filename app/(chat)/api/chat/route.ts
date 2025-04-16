@@ -4,6 +4,9 @@ import {
   convertToCoreMessages,
   streamObject,
   streamText,
+  CoreMessage,
+  CoreToolMessage,
+  CoreAssistantMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -417,25 +420,28 @@ export async function POST(request: Request) {
             ),
           });
 
-          const toolCalls = responseMessages.filter((m): m is ChatCompletionMessage & { function_call: FunctionCall } => 
-            m.role === 'tool' && 'function_call' in m
+          const toolCalls = responseMessages.filter((m): m is CoreToolMessage => 
+            m.role === 'tool' && 'content' in m
           );
 
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
               try {
-                const toolName = toolCall.function_call.name as keyof typeof tools.forex;
-                const args = JSON.parse(toolCall.function_call.arguments);
-                const result = await tools.forex[toolName].function(args);
-                
-                responseMessages.push({
-                  role: "tool",
-                  content: JSON.stringify(result),
-                  function_call: {
-                    name: toolName,
-                    arguments: JSON.stringify(args)
-                  }
-                });
+                const toolContent = Array.isArray(toolCall.content) ? toolCall.content[0] : null;
+                if (toolContent && 'toolName' in toolContent) {
+                  const toolName = toolContent.toolName as keyof typeof tools.forex;
+                  const args = toolContent.args;
+                  const result = await tools.forex[toolName].function(args);
+                  
+                  responseMessages.push({
+                    role: "tool",
+                    content: [{
+                      type: 'tool-result',
+                      toolName,
+                      result
+                    }]
+                  } as CoreToolMessage);
+                }
               } catch (error) {
                 console.error('Error processing tool call:', error);
                 continue;
