@@ -30,6 +30,7 @@ import {
 import { generateTitleFromUserMessage } from '../../actions';
 import { tools } from '@/lib/tools';
 import { forexTools } from '@/lib/tools/forex';
+import type { ChatCompletionMessage } from 'ai';
 
 export const maxDuration = 60;
 
@@ -64,6 +65,18 @@ Bienvenido a FXperto, una plataforma de estrategias cambiarias. Por favor, gener
 
 Asegúrate de utilizar encabezados para cada sección y presentar los datos de manera clara y concisa.
 `;
+
+// Definir las interfaces necesarias
+interface FunctionCall {
+  name: string;
+  arguments: string;
+}
+
+interface ToolMessage {
+  role: 'tool';
+  function_call: FunctionCall;
+  content?: string;
+}
 
 export async function POST(request: Request) {
   const {
@@ -404,10 +417,13 @@ export async function POST(request: Request) {
             ),
           });
 
-          const toolCalls = responseMessages.filter(m => m.role === 'tool');
+          const toolCalls = responseMessages.filter((m): m is ChatCompletionMessage & { function_call: FunctionCall } => 
+            m.role === 'tool' && 'function_call' in m
+          );
+
           if (toolCalls.length > 0) {
             for (const toolCall of toolCalls) {
-              if ('function_call' in toolCall) {
+              try {
                 const toolName = toolCall.function_call.name as keyof typeof tools.forex;
                 const args = JSON.parse(toolCall.function_call.arguments);
                 const result = await tools.forex[toolName].function(args);
@@ -420,6 +436,9 @@ export async function POST(request: Request) {
                     arguments: JSON.stringify(args)
                   }
                 });
+              } catch (error) {
+                console.error('Error processing tool call:', error);
+                continue;
               }
             }
           }
