@@ -12,7 +12,6 @@ import { PreviewMessage, ThinkingMessage } from '@/components/message';
 import { useScrollToBottom } from '@/components/use-scroll-to-bottom';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher } from '@/lib/utils';
-import { logger } from '@/lib/utils/logger';
 import { useSession } from '@/hooks/useSession';
 
 import { Block, type UIBlock } from './block';

@@ -1,5 +1,4 @@
 import {
-  type Message,
   StreamData,
   convertToCoreMessages,
   streamObject,
