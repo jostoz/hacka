@@ -19,9 +19,14 @@ export interface BaseTool {
   execute: (args: Record<string, unknown>) => Promise<ToolResult<unknown>>;
 }
 
-export interface ToolResult<T = unknown> {
-  type: MessageType | string;
-  data: T;
+export interface ToolResult<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
 }
 
 export interface ToolResultPart {

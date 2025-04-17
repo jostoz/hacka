@@ -6,12 +6,15 @@ import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
+import { XCircleIcon } from '@heroicons/react/24/outline';
 
 import { ChatHeader } from '@/components/chat-header';
 import { PreviewMessage, ThinkingMessage } from '@/components/message';
 import { useScrollToBottom } from '@/components/use-scroll-to-bottom';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher } from '@/lib/utils';
+import { logger } from '@/lib/utils/logger';
+import { useSession } from '@/hooks/useSession';
 
 import { Block, type UIBlock } from './block';
 import { BlockStreamHandler } from './block-stream-handler';
@@ -28,6 +31,9 @@ export function Chat({
   selectedModelId: string;
 }) {
   const { mutate } = useSWRConfig();
+  const [error, setError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const { isValid: isSessionValid, error: sessionError, refreshSession } = useSession();
 
   const {
     messages,
@@ -44,6 +50,10 @@ export function Chat({
     initialMessages,
     onFinish: () => {
       mutate('/api/history');
+    },
+    onError: (error) => {
+      logger.error('Chat error', error, { chatId: id });
+      setError(error.message || 'Error en la comunicación');
     },
   });
 
@@ -64,7 +74,7 @@ export function Chat({
     },
   });
 
-  const { data: votes } = useSWR<Array<Vote>>(
+  const { data: votes, error: votesError } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
     fetcher,
   );
@@ -74,10 +84,65 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
 
+  // Función para reintentar
+  const handleRetry = async () => {
+    if (isRetrying) return;
+    setIsRetrying(true);
+    setError(null);
+    try {
+      if (!isSessionValid) {
+        const sessionRefreshed = await refreshSession();
+        if (!sessionRefreshed) {
+          throw new Error('No se pudo restaurar la sesión');
+        }
+      }
+      await mutate('/api/chat');
+    } catch (err) {
+      logger.error('Retry error', err, { chatId: id });
+      setError('Error al reintentar la operación');
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  // Manejo de errores de votos
+  if (votesError) {
+    logger.error('Votes fetch error', votesError, { chatId: id });
+  }
+
   return (
     <>
       <div className="flex flex-col min-w-0 h-dvh bg-background">
         <ChatHeader selectedModelId={selectedModelId} />
+        
+        {(error || sessionError) && (
+          <div className="bg-red-50 p-4 rounded-md m-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error en la comunicación
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error || sessionError}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="rounded-md bg-red-50 px-2 py-1.5 text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                  >
+                    {isRetrying ? 'Reintentando...' : 'Reintentar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div
           ref={messagesContainerRef}
           className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
@@ -111,6 +176,7 @@ export function Chat({
             className="shrink-0 min-w-[24px] min-h-[24px]"
           />
         </div>
+
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           <MultimodalInput
             chatId={id}
