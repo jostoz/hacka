@@ -310,8 +310,11 @@ export function TechnicalAnalysisBlock({
       {data.signals && data.signals.length > 0 && (
         <div className="mt-4">
           <h4 className="text-lg font-semibold mb-2">Señales</h4>
-          {data.signals.map((signal, index) => (
-            <SignalCard key={index} signal={signal} />
+          {data.signals.map((signal) => (
+            <SignalCard 
+              key={`${signal.pair}-${signal.signal}-${signal.confidence}`} 
+              signal={signal} 
+            />
           ))}
         </div>
       )}
