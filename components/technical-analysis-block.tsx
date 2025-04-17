@@ -37,355 +37,285 @@ export function TechnicalAnalysisBlock({
 }: TechnicalAnalysisBlockProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  const { data: fetchedData, isLoading, error } = useMarketData(
-    symbol ? {
-      symbol,
-      interval: '1d',
-      range: '1y',
-      source
-    } : undefined
-  );
-
-  const data = providedData || fetchedData;
+  // Usar directamente los datos proporcionados
+  const data = providedData;
   
   useEffect(() => {
-    if (!chartContainerRef.current || !data) return;
-
-    // Obtener los datos OHLCV según el tipo
-    const ohlcvData: FxData[] = isTechnicalAnalysisData(data) 
-      ? data.historicalData 
-      : data.data;
-
-    const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
-      height: 600,
-      layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#333',
-        fontSize: 12,
-        fontFamily: 'geist, sans-serif',
-      },
-      grid: {
-        vertLines: { color: '#f0f0f0', style: LineStyle.Dotted },
-        horzLines: { color: '#f0f0f0', style: LineStyle.Dotted },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-        vertLine: {
-          color: '#9B9B9B',
-          width: 1,
-          style: LineStyle.Dashed,
-          labelBackgroundColor: '#9B9B9B',
-        },
-        horzLine: {
-          color: '#9B9B9B',
-          width: 1,
-          style: LineStyle.Dashed,
-          labelBackgroundColor: '#9B9B9B',
-        },
-      },
-      timeScale: {
-        borderColor: '#D1D4DC',
-        timeVisible: true,
-        secondsVisible: false,
-        fixLeftEdge: true,
-        fixRightEdge: true,
-        barSpacing: 12,
-        minBarSpacing: 8,
-      },
-      rightPriceScale: {
-        borderColor: '#D1D4DC',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.3,
-        },
-        autoScale: true,
-        mode: 2,
-      },
-    });
-
-    const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-      priceFormat: {
-        type: 'price',
-        precision: 5,
-        minMove: 0.00001,
-      },
-    });
-
-    // Filter out any invalid OHLCV data points
-    const validOHLCVData = ohlcvData.filter(d => (
-      d.timestamp != null &&
-      d.open != null && !Number.isNaN(d.open) &&
-      d.high != null && !Number.isNaN(d.high) &&
-      d.low != null && !Number.isNaN(d.low) &&
-      d.close != null && !Number.isNaN(d.close)
-    ));
-
-    if (validOHLCVData.length === 0) {
-      console.error('No valid OHLCV data points found');
+    if (!chartContainerRef.current || !data) {
+      console.warn('No chart container or data available');
       return;
     }
 
-    candlestickSeries.setData(
-      validOHLCVData.map(d => ({
-        time: (d.timestamp / 1000) as Time,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-      }))
-    );
+    try {
+      // Obtener los datos OHLCV
+      const ohlcvData: FxData[] = data.historicalData;
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      color: '#26a69a',
-      priceScaleId: 'volume',
-      priceFormat: {
-        type: 'volume',
-      },
-    });
+      if (!Array.isArray(ohlcvData) || ohlcvData.length === 0) {
+        console.error('Invalid or empty OHLCV data');
+        return;
+      }
 
-    const avgVolume = ohlcvData.reduce((sum, d) => sum + d.volume, 0) / ohlcvData.length;
-
-    chart.priceScale('volume').applyOptions({
-      scaleMargins: {
-        top: 0.7,
-        bottom: 0,
-      },
-      visible: true,
-    });
-
-    volumeSeries.setData(
-      ohlcvData.map(d => ({
-        time: (d.timestamp / 1000) as Time,
-        value: d.volume,
-        color: d.volume > avgVolume * 1.5 ? '#ef5350' : '#26a69a'
-      }))
-    );
-
-    // Solo mostrar indicadores si tenemos TechnicalAnalysisData
-    if (isTechnicalAnalysisData(data)) {
-      if (data.indicators.rsi.length > 0) {
-        const rsiSeries = chart.addSeries(LineSeries, {
-          color: '#2962FF',
-          lineWidth: 2,
-          priceScaleId: 'rsi',
-          priceFormat: {
-            type: 'price',
-            precision: 2,
+      const chart = createChart(chartContainerRef.current, {
+        width: chartContainerRef.current.clientWidth,
+        height: 600,
+        layout: {
+          background: { type: ColorType.Solid, color: '#ffffff' },
+          textColor: '#333',
+          fontSize: 12,
+          fontFamily: 'geist, sans-serif',
+        },
+        grid: {
+          vertLines: { color: '#f0f0f0', style: LineStyle.Dotted },
+          horzLines: { color: '#f0f0f0', style: LineStyle.Dotted },
+        },
+        crosshair: {
+          mode: CrosshairMode.Normal,
+          vertLine: {
+            color: '#9B9B9B',
+            width: 1,
+            style: LineStyle.Dashed,
+            labelBackgroundColor: '#9B9B9B',
           },
-        });
-
-        const overboughtLine = chart.addSeries(LineSeries, {
-          color: '#ef5350',
-          lineWidth: 1,
-          lineStyle: LineStyle.Dotted,
-          priceScaleId: 'rsi',
-        });
-
-        const oversoldLine = chart.addSeries(LineSeries, {
-          color: '#26a69a',
-          lineWidth: 1,
-          lineStyle: LineStyle.Dotted,
-          priceScaleId: 'rsi',
-        });
-
-        chart.priceScale('rsi').applyOptions({
+          horzLine: {
+            color: '#9B9B9B',
+            width: 1,
+            style: LineStyle.Dashed,
+            labelBackgroundColor: '#9B9B9B',
+          },
+        },
+        timeScale: {
+          borderColor: '#D1D4DC',
+          timeVisible: true,
+          secondsVisible: false,
+          fixLeftEdge: true,
+          fixRightEdge: true,
+          barSpacing: 12,
+          minBarSpacing: 8,
+        },
+        rightPriceScale: {
+          borderColor: '#D1D4DC',
           scaleMargins: {
             top: 0.1,
-            bottom: 0.8,
+            bottom: 0.3,
           },
-          visible: true,
-        });
-
-        const rsiData = data.indicators.rsi.map((value, index) => ({
-          time: (ohlcvData[index].timestamp / 1000) as Time,
-          value,
-        }));
-
-        rsiSeries.setData(rsiData);
-        
-        const timeRange = ohlcvData.map(d => d.timestamp / 1000 as Time);
-        overboughtLine.setData(timeRange.map(time => ({ time, value: 70 })));
-        oversoldLine.setData(timeRange.map(time => ({ time, value: 30 })));
-      }
-
-      if (data.indicators.macd.length > 0) {
-        const macdSeries = chart.addSeries(HistogramSeries, {
-          priceScaleId: 'macd',
-        });
-
-        chart.priceScale('macd').applyOptions({
-          scaleMargins: {
-            top: 0.7,
-            bottom: 0.1,
-          },
-          visible: true,
-        });
-
-        macdSeries.setData(
-          data.indicators.macd.map((value, index) => ({
-            time: (ohlcvData[index].timestamp / 1000) as Time,
-            value: value.histogram,
-            color: value.histogram > 0 
-              ? value.histogram > value.macdLine ? '#1B5E20' : '#66BB6A' 
-              : value.histogram < value.macdLine ? '#B71C1C' : '#EF5350',
-          }))
-        );
-      }
-
-      if (data.levels?.support) {
-        const supportLine = chart.addSeries(LineSeries, {
-          color: '#2196F3',
-          lineWidth: 2,
-          lineStyle: LineStyle.Dashed,
-          title: 'Soporte',
-        });
-        
-        supportLine.setData([
-          { time: ohlcvData[0].timestamp / 1000 as Time, value: data.levels.support },
-          { time: ohlcvData[ohlcvData.length - 1].timestamp / 1000 as Time, value: data.levels.support }
-        ]);
-      }
-
-      if (data.levels?.resistance) {
-        const resistanceLine = chart.addSeries(LineSeries, {
-          color: '#FF5252',
-          lineWidth: 2,
-          lineStyle: LineStyle.Dashed,
-          title: 'Resistencia',
-        });
-        
-        resistanceLine.setData([
-          { time: ohlcvData[0].timestamp / 1000 as Time, value: data.levels.resistance },
-          { time: ohlcvData[ohlcvData.length - 1].timestamp / 1000 as Time, value: data.levels.resistance }
-        ]);
-      }
-    }
-
-    const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
-    if (visibleLogicalRange !== null) {
-      chart.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, ohlcvData.length - 30),
-        to: ohlcvData.length - 1,
+          autoScale: true,
+          mode: 2,
+        },
       });
-    }
 
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
+      const candlestickSeries = chart.addSeries(CandlestickSeries, {
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+        priceFormat: {
+          type: 'price',
+          precision: 5,
+          minMove: 0.00001,
+        },
+      });
+
+      // Filter out any invalid OHLCV data points
+      const validOHLCVData = ohlcvData.filter(d => (
+        d.timestamp != null &&
+        d.open != null && !Number.isNaN(d.open) &&
+        d.high != null && !Number.isNaN(d.high) &&
+        d.low != null && !Number.isNaN(d.low) &&
+        d.close != null && !Number.isNaN(d.close)
+      ));
+
+      if (validOHLCVData.length === 0) {
+        console.error('No valid OHLCV data points found');
+        return;
+      }
+
+      candlestickSeries.setData(
+        validOHLCVData.map(d => ({
+          time: (d.timestamp / 1000) as Time,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+        }))
+      );
+
+      const volumeSeries = chart.addSeries(HistogramSeries, {
+        color: '#26a69a',
+        priceScaleId: 'volume',
+        priceFormat: {
+          type: 'volume',
+        },
+      });
+
+      const avgVolume = ohlcvData.reduce((sum, d) => sum + d.volume, 0) / ohlcvData.length;
+
+      chart.priceScale('volume').applyOptions({
+        scaleMargins: {
+          top: 0.7,
+          bottom: 0,
+        },
+        visible: true,
+      });
+
+      volumeSeries.setData(
+        ohlcvData.map(d => ({
+          time: (d.timestamp / 1000) as Time,
+          value: d.volume,
+          color: d.volume > avgVolume * 1.5 ? '#ef5350' : '#26a69a'
+        }))
+      );
+
+      // Solo mostrar indicadores si tenemos TechnicalAnalysisData
+      if (isTechnicalAnalysisData(data)) {
+        if (data.indicators.rsi.length > 0) {
+          const rsiSeries = chart.addSeries(LineSeries, {
+            color: '#2962FF',
+            lineWidth: 2,
+            priceScaleId: 'rsi',
+            priceFormat: {
+              type: 'price',
+              precision: 2,
+            },
+          });
+
+          const overboughtLine = chart.addSeries(LineSeries, {
+            color: '#ef5350',
+            lineWidth: 1,
+            lineStyle: LineStyle.Dotted,
+            priceScaleId: 'rsi',
+          });
+
+          const oversoldLine = chart.addSeries(LineSeries, {
+            color: '#26a69a',
+            lineWidth: 1,
+            lineStyle: LineStyle.Dotted,
+            priceScaleId: 'rsi',
+          });
+
+          chart.priceScale('rsi').applyOptions({
+            scaleMargins: {
+              top: 0.1,
+              bottom: 0.8,
+            },
+            visible: true,
+          });
+
+          const rsiData = data.indicators.rsi.map((value, index) => ({
+            time: (ohlcvData[index].timestamp / 1000) as Time,
+            value,
+          }));
+
+          rsiSeries.setData(rsiData);
+          
+          const timeRange = ohlcvData.map(d => d.timestamp / 1000 as Time);
+          overboughtLine.setData(timeRange.map(time => ({ time, value: 70 })));
+          oversoldLine.setData(timeRange.map(time => ({ time, value: 30 })));
+        }
+
+        if (data.indicators.macd.length > 0) {
+          const macdSeries = chart.addSeries(HistogramSeries, {
+            priceScaleId: 'macd',
+          });
+
+          chart.priceScale('macd').applyOptions({
+            scaleMargins: {
+              top: 0.7,
+              bottom: 0.1,
+            },
+            visible: true,
+          });
+
+          macdSeries.setData(
+            data.indicators.macd.map((value, index) => ({
+              time: (ohlcvData[index].timestamp / 1000) as Time,
+              value: value.histogram,
+              color: value.histogram > 0 
+                ? value.histogram > value.macdLine ? '#1B5E20' : '#66BB6A' 
+                : value.histogram < value.macdLine ? '#B71C1C' : '#EF5350',
+            }))
+          );
+        }
+
+        if (data.levels?.support) {
+          const supportLine = chart.addSeries(LineSeries, {
+            color: '#2196F3',
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            title: 'Soporte',
+          });
+          
+          supportLine.setData([
+            { time: ohlcvData[0].timestamp / 1000 as Time, value: data.levels.support },
+            { time: ohlcvData[ohlcvData.length - 1].timestamp / 1000 as Time, value: data.levels.support }
+          ]);
+        }
+
+        if (data.levels?.resistance) {
+          const resistanceLine = chart.addSeries(LineSeries, {
+            color: '#FF5252',
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            title: 'Resistencia',
+          });
+          
+          resistanceLine.setData([
+            { time: ohlcvData[0].timestamp / 1000 as Time, value: data.levels.resistance },
+            { time: ohlcvData[ohlcvData.length - 1].timestamp / 1000 as Time, value: data.levels.resistance }
+          ]);
+        }
+      }
+
+      const visibleLogicalRange = chart.timeScale().getVisibleLogicalRange();
+      if (visibleLogicalRange !== null) {
+        chart.timeScale().setVisibleLogicalRange({
+          from: Math.max(0, ohlcvData.length - 30),
+          to: ohlcvData.length - 1,
         });
       }
-    };
 
-    window.addEventListener('resize', handleResize);
+      const handleResize = () => {
+        if (chartContainerRef.current) {
+          chart.applyOptions({
+            width: chartContainerRef.current.clientWidth,
+          });
+        }
+      };
 
+      window.addEventListener('resize', handleResize);
+
+    } catch (error) {
+      console.error('Error creating chart:', error);
+    }
+
+    // Cleanup function
     return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
+      try {
+        if (chartContainerRef.current) {
+          chartContainerRef.current.innerHTML = '';
+        }
+      } catch (error) {
+        console.error('Error cleaning up chart:', error);
+      }
     };
-  }, [data]);
+  }, [data, symbol]); // Dependencias del efecto
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full size-8 border-b-2 border-gray-900 mb-4" />
-            <p>Cargando datos del mercado...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+  if (!data) {
+    return <div>No hay datos disponibles para mostrar</div>;
   }
 
-  if (error || !data) {
-    return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="text-center text-red-600">
-            <p>Error al cargar los datos: {error}</p>
-            <p className="text-sm mt-2">
-              Por favor, intente nuevamente más tarde
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Solo mostrar análisis técnico si tenemos TechnicalAnalysisData
-  if (isTechnicalAnalysisData(data)) {
-    const trendStrength = data.indicators.macd[data.indicators.macd.length - 1]?.histogram || 0;
-    const trend = trendStrength > 0 ? 'Alcista' : trendStrength < 0 ? 'Bajista' : 'Neutral';
-    const strength = Math.min(Math.abs(trendStrength * 10), 10).toFixed(1);
-
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Análisis Técnico: {symbol || data.pair}</h3>
-            <div className="flex gap-4 items-center">
-              <Badge variant={trend === 'Alcista' ? 'success' : trend === 'Bajista' ? 'destructive' : 'secondary'}>
-                {trend}
-              </Badge>
-              <span className="text-sm">Fuerza: {strength}/10</span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="p-3 bg-gray-50 rounded">
-              <h4 className="font-medium mb-2">Niveles Clave</h4>
-              {data.levels && (
-                <>
-                  <div className="text-green-600">Soporte: {data.levels.support?.toFixed(4)}</div>
-                  <div className="text-red-600">Resistencia: {data.levels.resistance?.toFixed(4)}</div>
-                </>
-              )}
-            </div>
-            <div className="p-3 bg-gray-50 rounded">
-              <h4 className="font-medium mb-2">Indicadores</h4>
-              <div>RSI: {data.indicators.rsi[data.indicators.rsi.length - 1]?.toFixed(2)}</div>
-              <div>MACD: {data.indicators.macd[data.indicators.macd.length - 1]?.histogram.toFixed(4)}</div>
-            </div>
-          </div>
-
-          <div ref={chartContainerRef} className="mb-4" />
-
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded">
-              <h4 className="font-medium mb-2">Resumen del Análisis</h4>
-              <p className="text-sm text-gray-600">{data.summary}</p>
-            </div>
-
-            {data.signals.map((signal) => (
-              <SignalCard 
-                key={`${signal.pair}-${signal.signal}-${signal.confidence}-${signal.stopLoss}`}
-                signal={signal}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Si solo tenemos MarketDataResponse, mostrar un gráfico simple
   return (
-    <Card>
-      <CardHeader>
-        <h3 className="text-lg font-semibold">Gráfico: {symbol}</h3>
-      </CardHeader>
-      <CardContent>
-        <div ref={chartContainerRef} className="mb-4" />
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div ref={chartContainerRef} className="w-full h-[600px] bg-white" />
+      {data.signals && data.signals.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold mb-2">Señales</h4>
+          {data.signals.map((signal, index) => (
+            <SignalCard key={index} signal={signal} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
