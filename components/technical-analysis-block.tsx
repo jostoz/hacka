@@ -1,7 +1,6 @@
 // components/technical-analysis-block.tsx
 'use client';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { TechnicalAnalysisData, FxData } from '@/lib/types/types';
 import { SignalCard } from './SignalCard';
 import { 
@@ -15,8 +14,6 @@ import {
   type Time,
 } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { useMarketData } from '@/lib/hooks/useMarketData';
 import type { MarketDataParams, MarketDataResponse } from '@/lib/types/market-data';
 
 interface TechnicalAnalysisBlockProps {
