@@ -6,7 +6,6 @@ import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
-import { XCircleIcon } from '@heroicons/react/24/outline';
 
 import { ChatHeader } from '@/components/chat-header';
 import { PreviewMessage, ThinkingMessage } from '@/components/message';
@@ -52,7 +51,7 @@ export function Chat({
       mutate('/api/history');
     },
     onError: (error) => {
-      logger.error('Chat error', error, { chatId: id });
+      console.error('Chat error:', error);
       setError(error.message || 'Error en la comunicación');
     },
   });
@@ -74,7 +73,7 @@ export function Chat({
     },
   });
 
-  const { data: votes, error: votesError } = useSWR<Array<Vote>>(
+  const { data: votes } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
     fetcher,
   );
@@ -98,35 +97,27 @@ export function Chat({
       }
       await mutate('/api/chat');
     } catch (err) {
-      logger.error('Retry error', err, { chatId: id });
+      console.error('Retry error:', err);
       setError('Error al reintentar la operación');
     } finally {
       setIsRetrying(false);
     }
   };
 
-  // Manejo de errores de votos
-  if (votesError) {
-    logger.error('Votes fetch error', votesError, { chatId: id });
-  }
-
   return (
     <>
       <div className="flex flex-col min-w-0 h-dvh bg-background">
         <ChatHeader selectedModelId={selectedModelId} />
         
-        {(error || sessionError) && (
+        {error && (
           <div className="bg-red-50 p-4 rounded-md m-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-              </div>
+            <div className="flex items-center">
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">
                   Error en la comunicación
                 </h3>
                 <div className="mt-2 text-sm text-red-700">
-                  <p>{error || sessionError}</p>
+                  <p>{error}</p>
                 </div>
                 <div className="mt-4">
                   <button

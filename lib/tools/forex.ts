@@ -212,8 +212,19 @@ interface PriceLevels {
 
 // Función para calcular indicadores
 function calculateIndicators(data: FxData[]): TechnicalIndicators {
+  if (data.length < 26) { // Necesitamos al menos 26 períodos para MACD
+    throw new Error('Insufficient data for technical indicators calculation');
+  }
+
   const values = data.map(d => d.close);
-  const rsi = RSI.calculate({ values, period: 14 });
+  
+  // Calcular RSI
+  const rsi = RSI.calculate({ 
+    values, 
+    period: 14 
+  });
+
+  // Calcular MACD
   const macdResult = MACD.calculate({
     values,
     fastPeriod: 12,
@@ -222,8 +233,12 @@ function calculateIndicators(data: FxData[]): TechnicalIndicators {
     SimpleMAOscillator: false,
     SimpleMASignal: false,
   });
-  const sma = SMA.calculate({ values, period: 20 });
 
+  // Calcular SMAs
+  const smaFast = SMA.calculate({ values, period: 10 });
+  const smaSlow = SMA.calculate({ values, period: 20 });
+
+  // Formatear resultados
   return {
     rsi,
     macd: macdResult.map(m => ({
@@ -232,12 +247,13 @@ function calculateIndicators(data: FxData[]): TechnicalIndicators {
       histogram: m.histogram || 0,
       trend: (m.histogram || 0) > 0 ? 'bullish' : (m.histogram || 0) < 0 ? 'bearish' : 'neutral'
     })),
-    sma
+    sma: [...smaFast, ...smaSlow]
   };
 }
 
 // Función para calcular niveles de soporte y resistencia
-function calculatePriceLevels(prices: number[]): PriceLevels {
+function calculatePriceLevels(data: FxData[]): PriceLevels {
+  const prices = data.map(d => d.close);
   const pricesSorted = [...prices].sort((a, b) => a - b);
   const supportIndex = Math.floor(pricesSorted.length * 0.2);
   const resistanceIndex = Math.floor(pricesSorted.length * 0.8);
@@ -248,48 +264,71 @@ function calculatePriceLevels(prices: number[]): PriceLevels {
   };
 }
 
-// Actualizar fetchTechnicalAnalysisFromAPI
-async function fetchTechnicalAnalysisFromAPI(pair: string, timeframe: string, periods: number): Promise<TechnicalAnalysisData> {
+/**
+ * Fetches and analyzes technical indicators for a forex pair
+ */
+export async function fetchTechnicalAnalysisFromAPI(
+  pair: string, 
+  timeframe: string, 
+  periods: number
+): Promise<TechnicalAnalysisData | undefined> {
   try {
-    // Get historical data from API
-    const fxData = await getFxDataFromAPI(pair, timeframe, periods);
-
-    // Calculate technical indicators
-    const indicators = calculateIndicators(fxData);
-    const lastMacd = indicators.macd[indicators.macd.length - 1];
-    const lastRsi = indicators.rsi[indicators.rsi.length - 1];
-    const lastSma = indicators.sma[indicators.sma.length - 1];
-
-    if (!lastMacd || typeof lastRsi !== 'number' || typeof lastSma !== 'number') {
-      throw new Error('Invalid indicator values');
+    // Obtener datos históricos
+    const historicalData = await getFxDataFromAPI(pair, timeframe, periods);
+    
+    if (!historicalData || historicalData.length < 26) {
+      return undefined;
     }
 
-    const prices = fxData.map(d => d.close);
-    const levels = calculatePriceLevels(prices);
+    // Calcular indicadores técnicos
+    const indicators = calculateIndicators(historicalData);
+    const priceLevels = calculatePriceLevels(historicalData);
+    
+    // Obtener el último precio
+    const lastPrice = historicalData[historicalData.length - 1].close;
+    const lastRsi = indicators.rsi[indicators.rsi.length - 1];
+    const lastMacd = indicators.macd[indicators.macd.length - 1];
+    
+    // Determinar señal basada en indicadores
+    let signalType: 'buy' | 'sell' | 'hold' = 'hold';
+    let confidence = 0.5;
+    
+    // Lógica de señales
+    if (lastRsi < 30 && lastMacd.trend === 'bullish') {
+      signalType = 'buy';
+      confidence = 0.8;
+    } else if (lastRsi > 70 && lastMacd.trend === 'bearish') {
+      signalType = 'sell';
+      confidence = 0.8;
+    }
 
-    const signal: Signal = {
-      pair,
-      signal: lastMacd.histogram > 0 ? 'buy' : lastMacd.histogram < 0 ? 'sell' : 'hold',
-      confidence: Math.min(Math.abs(lastRsi - 50) / 50, 1),
-      positionSize: 1000,
-      stopLoss: lastSma * 0.98,
-      justification: `RSI: ${lastRsi.toFixed(2)}, MACD: ${lastMacd.histogram.toFixed(4)}`
-    };
-
-    return {
+    // Crear objeto de análisis técnico
+    const technicalAnalysis: TechnicalAnalysisData = {
       pair,
       timestamp: Date.now(),
-      signals: [signal],
-      historicalData: fxData,
-      indicators,
-      levels,
-      summary: `Analysis for ${pair} shows ${signal.signal === 'buy' ? 'bullish' : signal.signal === 'sell' ? 'bearish' : 'neutral'} momentum with key levels at ${levels.support.toFixed(4)} (support) and ${levels.resistance.toFixed(4)} (resistance)`
+      signals: [{
+        pair,
+        signal: signalType,
+        confidence,
+        positionSize: 1000, // Valor por defecto, debería calcularse basado en el capital y riesgo
+        stopLoss: signalType === 'buy' ? priceLevels.support : priceLevels.resistance,
+        justification: `RSI: ${lastRsi.toFixed(2)}, MACD trend: ${lastMacd.trend}, Price: ${lastPrice}`
+      }],
+      historicalData,
+      indicators: {
+        rsi: indicators.rsi,
+        macd: indicators.macd,
+        sma: indicators.sma
+      },
+      levels: priceLevels,
+      summary: `Technical analysis for ${pair} shows ${lastMacd.trend} momentum with RSI at ${lastRsi.toFixed(2)}`
     };
+
+    return technicalAnalysis;
+
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Error in technical analysis: ${error.message}`);
-    }
-    throw new Error('Unknown error in technical analysis');
+    console.error('Error in technical analysis:', error);
+    return undefined;
   }
 }
 
@@ -310,7 +349,7 @@ export const forexTools = {
       const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       const data = await getFxDataFromAPI(pair, timeframe, periods);
       return {
-        type: 'fx-data' as const,
+        success: true,
         data
       };
     }
@@ -331,7 +370,7 @@ export const forexTools = {
       const { data, capital, risk_percent } = args as { data: FxData[]; capital: number; risk_percent: number };
       const response = calculateSignal(data, 'EUR/USD', capital, risk_percent);
       return {
-        type: 'quant-signal' as const,
+        success: response.success,
         data: response.success ? response.data : {
           pair: 'EUR/USD',
           signal: 'hold',
@@ -357,7 +396,7 @@ export const forexTools = {
       const { data } = args as { data: FxData[] };
       const forecast = generateForecast(data);
       return {
-        type: 'forecast' as const,
+        success: true,
         data: forecast
       };
     }
@@ -378,7 +417,7 @@ export const forexTools = {
       const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
       return {
-        type: 'technical-analysis' as const,
+        success: !!analysis,
         data: analysis
       };
     }
