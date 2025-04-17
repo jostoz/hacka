@@ -52,7 +52,7 @@ const forexTools = {
 export const tools = {
   weather: weatherTools,
   forex: forexTools,
-  // Agrega más herramientas aquí (crypto, news, etc.)
+  // Agrega más herramientas aquí (news, etc.)
 };
 
 export type ToolNamespace = keyof typeof tools; // Tipos para autocompletado
