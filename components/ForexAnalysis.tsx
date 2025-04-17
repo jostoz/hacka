@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
 import type { Signal, Forecast, TechnicalAnalysisData, FxData, ToolResult } from '@/lib/types/types';
+import { TechnicalAnalysisBlock } from './technical-analysis-block';
 
 interface ForexConfig {
   pair: string;
@@ -123,7 +124,9 @@ export function ForexAnalysis() {
     setLoading(true);
     try {
       const analysis = await forexTools.fetchTechnicalAnalysis.execute({
-        pair: config.pair
+        pair: config.pair,
+        timeframe: config.timeframe,
+        periods: config.periods
       });
       setTechnicalAnalysis(analysis as ToolResult<ForexToolTechnicalAnalysis>);
     } catch (err: unknown) {
@@ -260,9 +263,13 @@ export function ForexAnalysis() {
       {technicalAnalysis && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Análisis Técnico</h3>
-          <pre className="bg-gray-100 p-4 rounded">
-            {JSON.stringify(technicalAnalysis.data, null, 2)}
-          </pre>
+          <TechnicalAnalysisBlock
+            symbol={config.pair}
+            data={technicalAnalysis.data}
+          />
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-700">{technicalAnalysis.data.summary}</p>
+          </div>
         </div>
       )}
     </Card>

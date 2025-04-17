@@ -249,38 +249,12 @@ function calculatePriceLevels(prices: number[]): PriceLevels {
 }
 
 // Actualizar fetchTechnicalAnalysisFromAPI
-async function fetchTechnicalAnalysisFromAPI(pair: string): Promise<TechnicalAnalysisData> {
+async function fetchTechnicalAnalysisFromAPI(pair: string, timeframe: string, periods: number): Promise<TechnicalAnalysisData> {
   try {
-    // Generar datos históricos más realistas
-    const basePrice = 1.2000;
-    const volatility = 0.002;
-    const trend = 0.0001;
-    
-    let currentPrice = basePrice;
-    const fxData: FxData[] = Array.from({ length: 100 }, (_, i): FxData => {
-      currentPrice = currentPrice + trend + (Math.random() - 0.5) * volatility;
-      const isVolatilePoint = Math.random() > 0.8;
-      const extraVolatility = isVolatilePoint ? volatility * 2 : volatility;
-      
-      const high = currentPrice + Math.random() * extraVolatility;
-      const low = currentPrice - Math.random() * extraVolatility;
-      const open = low + Math.random() * (high - low);
-      const close = low + Math.random() * (high - low);
-      
-      const baseVolume = 100000;
-      const volumeMultiplier = isVolatilePoint ? 3 : 1;
-      const volume = Math.floor(baseVolume * (0.5 + Math.random()) * volumeMultiplier);
+    // Get historical data from API
+    const fxData = await getFxDataFromAPI(pair, timeframe, periods);
 
-      return {
-        timestamp: Date.now() - ((99 - i) * 60000),
-        open,
-        high,
-        low,
-        close,
-        volume
-      };
-    }).reverse();
-
+    // Calculate technical indicators
     const indicators = calculateIndicators(fxData);
     const lastMacd = indicators.macd[indicators.macd.length - 1];
     const lastRsi = indicators.rsi[indicators.rsi.length - 1];
@@ -391,16 +365,18 @@ export const forexTools = {
 
   fetchTechnicalAnalysis: {
     name: 'fetchTechnicalAnalysis',
-    description: 'Get technical analysis for a currency pair',
+    description: 'Get technical analysis for a currency pair with historical data',
     parameters: z.object({
-      pair: z.string().describe('Currency pair (e.g. EUR/USD)')
+      pair: z.string().describe('Currency pair (e.g. EUR/USD)'),
+      timeframe: z.string().describe('Timeframe (e.g. 1h, 4h, 1d)'),
+      periods: z.number().describe('Number of periods to fetch')
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
       if (!validateForexParams(args)) {
         throw new Error('Invalid parameters for fetchTechnicalAnalysis');
       }
-      const { pair } = args as { pair: string };
-      const analysis = await fetchTechnicalAnalysisFromAPI(pair);
+      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
+      const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
       return {
         type: 'technical-analysis' as const,
         data: analysis
