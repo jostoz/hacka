@@ -1,15 +1,3 @@
-export class ForexToolError extends Error {
-  code: string;
-  details?: unknown;
-
-  constructor(message: string, code: string, details?: unknown) {
-    super(message);
-    this.name = 'ForexToolError';
-    this.code = code;
-    this.details = details;
-  }
-}
-
 export const ErrorCodes = {
   INVALID_DATA: 'INVALID_DATA',
   API_ERROR: 'API_ERROR',
@@ -23,6 +11,17 @@ export const ErrorCodes = {
 } as const;
 
 export type ForexErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+
+export class ForexToolError extends Error {
+  constructor(
+    message: string,
+    public code: ForexErrorCode,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'ForexToolError';
+  }
+}
 
 export function isForexToolError(error: unknown): error is ForexToolError {
   return error instanceof ForexToolError;

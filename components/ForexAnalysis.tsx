@@ -244,32 +244,28 @@ export function ForexAnalysis() {
         </div>
       )}
       
-      {signal && (
+      {signal?.data && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Señal de Trading</h3>
-          <SignalCard signal={signal.data} />
+          <SignalCard signal={signal.data as Signal} />
         </div>
       )}
 
-      {forecast && (
+      {forecast?.data && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Pronóstico</h3>
-          <pre className="bg-gray-100 p-4 rounded">
-            {JSON.stringify(forecast.data, null, 2)}
-          </pre>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-700">Próximo precio: {forecast.data.nextPrice}</p>
+            <p className="text-xs text-gray-500 mt-2">Confianza: {forecast.data.confidence}%</p>
+            <p className="text-xs text-gray-500">Timestamp: {forecast.data.timestamp}</p>
+          </div>
         </div>
       )}
 
-      {technicalAnalysis && (
+      {technicalAnalysis?.data && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Análisis Técnico</h3>
-          <TechnicalAnalysisBlock
-            symbol={config.pair}
-            data={technicalAnalysis.data}
-          />
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-700">{technicalAnalysis.data.summary}</p>
-          </div>
+          <TechnicalAnalysisBlock data={technicalAnalysis.data} />
         </div>
       )}
     </Card>

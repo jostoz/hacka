@@ -1,4 +1,7 @@
-import { type ForexToolError } from '../tools/forex';
+interface ForexToolError extends Error {
+  code: string;
+  details?: unknown;
+}
 
 export interface LogContext {
   timestamp: string;

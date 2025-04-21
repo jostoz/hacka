@@ -43,6 +43,8 @@ export function TechnicalAnalysisBlock({
       return;
     }
 
+    const container = chartContainerRef.current;
+
     try {
       // Obtener los datos OHLCV
       const ohlcvData: FxData[] = data.historicalData;
@@ -52,8 +54,8 @@ export function TechnicalAnalysisBlock({
         return;
       }
 
-      const chart = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth,
+      const chart = createChart(container, {
+        width: container.clientWidth,
         height: 600,
         layout: {
           background: { type: ColorType.Solid, color: '#ffffff' },
@@ -272,9 +274,9 @@ export function TechnicalAnalysisBlock({
       }
 
       const handleResize = () => {
-        if (chartContainerRef.current) {
+        if (container) {
           chart.applyOptions({
-            width: chartContainerRef.current.clientWidth,
+            width: container.clientWidth,
           });
         }
       };
@@ -288,8 +290,8 @@ export function TechnicalAnalysisBlock({
     // Cleanup function
     return () => {
       try {
-        if (chartContainerRef.current) {
-          chartContainerRef.current.innerHTML = '';
+        if (container) {
+          container.innerHTML = '';
         }
       } catch (error) {
         console.error('Error cleaning up chart:', error);

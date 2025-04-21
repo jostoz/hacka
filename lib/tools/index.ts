@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BaseTool } from '@/lib/types/types';
+import type { BaseTool, ToolResult } from '@/lib/types/types';
 
 // --- Herramientas de Clima ---
 async function fetchWeatherFromAPI(location: string) {
@@ -16,16 +16,26 @@ const weatherTools = {
     parameters: z.object({
       location: z.string().describe('Ubicación para obtener el clima')
     }),
-    execute: async (args: Record<string, unknown>) => {
-      const { location } = args as { location: string };
-      const weather = await fetchWeatherFromAPI(location);
-      return {
-        type: 'weather',
-        data: {
-          location,
-          ...weather
-        }
-      };
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<unknown>> => {
+      try {
+        const { location } = args as { location: string };
+        const weather = await fetchWeatherFromAPI(location);
+        return {
+          success: true,
+          data: {
+            location,
+            ...weather
+          }
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: {
+            code: 'WEATHER_ERROR',
+            message: error instanceof Error ? error.message : 'Error desconocido'
+          }
+        };
+      }
     }
   }
 } satisfies Record<string, BaseTool>;
@@ -40,10 +50,23 @@ const forexTools = {
       timeframe: z.string().describe('Marco temporal, ej: 1h, 4h, 1d'),
       periods: z.number().describe('Número de periodos a obtener'),
     }),
-    execute: async (args: Record<string, unknown>) => {
-      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
-      // Implementación real aquí
-      return { type: 'fx-data', data: {} };
+    execute: async (args: Record<string, unknown>): Promise<ToolResult<unknown>> => {
+      try {
+        const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
+        // Implementación real aquí
+        return {
+          success: true,
+          data: {}
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: {
+            code: 'FX_DATA_ERROR',
+            message: error instanceof Error ? error.message : 'Error desconocido'
+          }
+        };
+      }
     },
   },
 } satisfies Record<string, BaseTool>;

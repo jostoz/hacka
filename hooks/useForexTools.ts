@@ -1,14 +1,19 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { forexTools } from '@/lib/tools/forex';
-import { ForexToolError, ErrorCodes } from '@/lib/tools/forex/errors';
+import { tools } from '@/lib/tools';
 import { logger } from '@/lib/utils/logger';
 import type { ToolResult } from '@/lib/types/types';
 
 type ForexToolArgs = Record<string, unknown>;
 
+interface CustomError extends Error {
+  code?: string;
+  details?: unknown;
+}
+
 export function useForexTools() {
   const queryClient = useQueryClient();
+  const forexTools = tools.forex;
   
   const executeForexTool = useCallback(async <T,>(
     toolName: keyof typeof forexTools,
@@ -17,21 +22,14 @@ export function useForexTools() {
     try {
       const tool = forexTools[toolName];
       if (!tool) {
-        throw new ForexToolError(
-          `Herramienta "${toolName}" no encontrada`,
-          ErrorCodes.TOOL_EXECUTION_ERROR
-        );
+        throw new Error(`Herramienta "${toolName}" no encontrada`);
       }
 
       // Validar argumentos
       try {
         tool.parameters.parse(args);
       } catch (error) {
-        throw new ForexToolError(
-          'Argumentos inválidos',
-          ErrorCodes.VALIDATION_ERROR,
-          error
-        );
+        throw new Error('Argumentos inválidos');
       }
 
       const result = await tool.execute(args);
@@ -46,35 +44,31 @@ export function useForexTools() {
     } catch (error) {
       logger.error(`Error executing forex tool ${toolName}`, error, { args });
 
-      if (error instanceof ForexToolError) {
-        return {
-          success: false,
-          error: {
-            code: error.code,
-            message: error.message,
-            details: error.details
-          }
-        };
-      }
+      const customError = error as CustomError;
       
       return {
         success: false,
         error: {
-          code: ErrorCodes.UNKNOWN_ERROR,
-          message: error instanceof Error ? error.message : 'Error desconocido'
+          code: customError.code || 'UNKNOWN_ERROR',
+          message: customError.message || 'Error desconocido',
+          details: customError.details
         }
       };
     }
-  }, [queryClient]);
+  }, [queryClient, forexTools]);
 
   const invalidateToolCache = useCallback(async (
     toolName: keyof typeof forexTools,
     args?: ForexToolArgs
   ) => {
     if (args) {
-      await queryClient.invalidateQueries([toolName, JSON.stringify(args)]);
+      await queryClient.invalidateQueries({
+        queryKey: [toolName, JSON.stringify(args)]
+      });
     } else {
-      await queryClient.invalidateQueries([toolName]);
+      await queryClient.invalidateQueries({
+        queryKey: [toolName]
+      });
     }
   }, [queryClient]);
 

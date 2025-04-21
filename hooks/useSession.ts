@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { auth } from '@/app/(auth)/auth';
 import { logger } from '@/lib/utils/logger';
 
 interface SessionState {
@@ -19,12 +18,13 @@ export function useSession() {
   useEffect(() => {
     const validateSession = async () => {
       try {
-        const session = await auth();
+        const response = await fetch('/api/auth/session');
+        const data = await response.json();
         setSessionState({
-          isValid: Boolean(session?.user?.id),
+          isValid: Boolean(data?.user?.id),
           isLoading: false,
           error: null,
-          userId: session?.user?.id
+          userId: data?.user?.id
         });
       } catch (error) {
         logger.error('Error validating session', error);
@@ -42,12 +42,13 @@ export function useSession() {
   const refreshSession = async () => {
     setSessionState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const session = await auth();
+      const response = await fetch('/api/auth/session');
+      const data = await response.json();
       setSessionState({
-        isValid: Boolean(session?.user?.id),
+        isValid: Boolean(data?.user?.id),
         isLoading: false,
         error: null,
-        userId: session?.user?.id
+        userId: data?.user?.id
       });
       return true;
     } catch (error) {

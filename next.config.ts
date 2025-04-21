@@ -14,7 +14,11 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // Add any necessary webpack configurations here
+    // Configure path aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': process.cwd(),
+    };
     return config;
   },
 };
