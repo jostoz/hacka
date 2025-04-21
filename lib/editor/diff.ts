@@ -3,16 +3,27 @@ import type { Schema, Node } from 'prosemirror-model';
 import { diff_match_patch } from 'diff-match-patch';
 
 export enum DiffType {
-  Deleted = 'deleted',
-  Inserted = 'inserted',
-  Unchanged = 'unchanged'
+  None = "none",
+  Added = "added",
+  Removed = "removed",
+  Changed = "changed",
 }
 
 export function compareNodes(oldNode: Node, newNode: Node): DiffType {
-  if (!oldNode && !newNode) return DiffType.Unchanged;
-  if (!oldNode) return DiffType.Inserted;
-  if (!newNode) return DiffType.Deleted;
-  return nodesEqual(oldNode, newNode) ? DiffType.Unchanged : DiffType.Deleted;
+  if (oldNode.type !== newNode.type) return DiffType.Changed;
+  if (oldNode.isText && newNode.isText) {
+    return oldNode.text === newNode.text ? DiffType.None : DiffType.Changed;
+  }
+  if (oldNode.content.size !== newNode.content.size) return DiffType.Changed;
+
+  let hasChanges = false;
+  oldNode.content.forEach((oldChild, _, i) => {
+    const newChild = newNode.content.child(i);
+    const childDiff = compareNodes(oldChild, newChild);
+    if (childDiff !== DiffType.None) hasChanges = true;
+  });
+
+  return hasChanges ? DiffType.Changed : DiffType.None;
 }
 
 export function nodesEqual(node1: Node, node2: Node): boolean {
@@ -27,13 +38,41 @@ export function nodesEqual(node1: Node, node2: Node): boolean {
   return content1.every((child, i) => nodesEqual(child, content2[i]));
 }
 
-export function diffEditor(oldDoc: Node, newDoc: Node, schema: Schema): Node {
-  const oldContent = normalizeContent(oldDoc);
-  const newContent = normalizeContent(newDoc);
-  
-  const diffResult = compareContent(oldContent, newContent);
-  
-  return patchDocument(oldDoc, diffResult, schema);
+export function diffEditor(schema: Schema, oldDoc: Node, newDoc: Node): Node {
+  const diffContent: Node[] = [];
+
+  // Helper to create a node with a specific diff mark
+  const markNode = (node: Node, type: DiffType): Node => {
+    if (type === DiffType.None) return node;
+    return node.mark([schema.marks.diff.create({ type })]);
+  };
+
+  // Process content
+  const oldSize = oldDoc.content.size;
+  const newSize = newDoc.content.size;
+  const maxSize = Math.max(oldSize, newSize);
+
+  for (let i = 0; i < maxSize; i++) {
+    if (i >= oldSize) {
+      // Added content
+      diffContent.push(markNode(newDoc.content.child(i), DiffType.Added));
+    } else if (i >= newSize) {
+      // Removed content
+      diffContent.push(markNode(oldDoc.content.child(i), DiffType.Removed));
+    } else {
+      const oldNode = oldDoc.content.child(i);
+      const newNode = newDoc.content.child(i);
+      const diffType = compareNodes(oldNode, newNode);
+
+      if (diffType === DiffType.None) {
+        diffContent.push(oldNode);
+      } else {
+        diffContent.push(markNode(newNode, diffType));
+      }
+    }
+  }
+
+  return schema.node(oldDoc.type, oldDoc.attrs, Fragment.from(diffContent));
 }
 
 function normalizeContent(doc: Node): Node[] {
@@ -70,13 +109,13 @@ function compareContent(oldContent: Node[], newContent: Node[]): DiffType[] {
   
   while (oldIndex < oldContent.length || newIndex < newContent.length) {
     if (oldIndex >= oldContent.length) {
-      result.push(DiffType.Inserted);
+      result.push(DiffType.Added);
       newIndex++;
       continue;
     }
     
     if (newIndex >= newContent.length) {
-      result.push(DiffType.Deleted);
+      result.push(DiffType.Removed);
       oldIndex++;
       continue;
     }
@@ -85,11 +124,11 @@ function compareContent(oldContent: Node[], newContent: Node[]): DiffType[] {
     const newNode = newContent[newIndex];
     
     if (nodesEqual(oldNode, newNode)) {
-      result.push(DiffType.Unchanged);
+      result.push(DiffType.None);
       oldIndex++;
       newIndex++;
     } else {
-      result.push(DiffType.Deleted);
+      result.push(DiffType.Changed);
       oldIndex++;
     }
   }
@@ -103,7 +142,7 @@ function patchDocument(doc: Node, diffResult: DiffType[], schema: Schema): Node 
   
   content.forEach((node: Node, index: number) => {
     const diffType = diffResult[index];
-    if (diffType === DiffType.Unchanged) {
+    if (diffType === DiffType.None) {
       newContent.push(node);
     } else {
       const mark = schema.marks.diffMark.create({ type: diffType });
