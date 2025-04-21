@@ -2,6 +2,7 @@
 'use client';
 
 import type { TechnicalAnalysisData, FxData } from '@/lib/types/types';
+import { SignalCard } from '@/components/SignalCard';
 import { 
   createChart, 
   CandlestickSeries, 
