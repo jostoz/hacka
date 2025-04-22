@@ -31,6 +31,15 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     })
   : null;
 
+function getClientIp(request: NextRequest): string {
+  // Intenta obtener la IP real del cliente a través de headers comunes
+  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0];
+  const realIp = request.headers.get('x-real-ip');
+  
+  // Usa la primera IP válida encontrada o 'anonymous' como fallback
+  return forwardedFor || realIp || 'anonymous';
+}
+
 export async function rateLimit(
   request: NextRequest,
   type: RateLimitType = 'api'
@@ -41,7 +50,7 @@ export async function rateLimit(
   }
 
   try {
-    const ip = request.ip || 'anonymous';
+    const ip = getClientIp(request);
     const config = RATE_LIMITS[type];
     
     const ratelimit = new Ratelimit({
