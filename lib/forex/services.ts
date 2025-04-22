@@ -61,15 +61,13 @@ export function calculateSignal(
     // Aquí iría la lógica de cálculo de señales
     const signal: Signal = {
       symbol: pair,
-      entryPrice: lastPrice,
-      signal: 'buy',
-      confidence: 0.75,
-      positionSize: riskAmount / (lastPrice * 0.01), // Calculamos el tamaño de la posición basado en el riesgo
-      stopLoss: lastPrice * 0.99,
+      type: 'TECHNICAL',
+      price: lastPrice,
+      stopLoss: lastPrice * 0.98,
       takeProfit: lastPrice * 1.02,
-      justification: 'Señal basada en análisis técnico y gestión de riesgo',
-      type: 'technical',
-      value: lastPrice
+      reason: 'Señal basada en análisis técnico y gestión de riesgo',
+      timestamp: Date.now(),
+      confidence: 0.75
     };
 
     return {
@@ -115,14 +113,16 @@ export function getSimpleForecast(data: FxData[]): ForexResponse<Forecast> {
     
     const confidence = Math.min(0.95, Math.abs(slope));
 
+    const forecast: Forecast = {
+      symbol: 'EURUSD', // This should come from parameters
+      nextPrice,
+      confidence,
+      timestamp: new Date(nextTimestamp).toISOString()
+    };
+
     return {
       success: true,
-      data: {
-        pair: 'EURUSD', // This should come from parameters
-        nextPrice,
-        confidence,
-        timestamp: new Date(nextTimestamp).toISOString()
-      }
+      data: forecast
     };
   } catch (error) {
     return {
@@ -171,37 +171,45 @@ export function getTechnicalAnalysis(data: FxData[]): ForexResponse<TechnicalAna
     const signals: Signal[] = [];
     if (rsiValue < 30) {
       signals.push({
-        symbol: 'EURUSD', // This should come from parameters
-        entryPrice: prices[prices.length - 1],
-        signal: 'buy',
-        confidence: 0.7,
-        positionSize: 1,
+        symbol: 'EURUSD',
+        type: 'TECHNICAL',
+        price: prices[prices.length - 1],
         stopLoss: prices[prices.length - 1] * 0.99,
-        justification: 'RSI indicates oversold conditions',
-        type: 'RSI',
-        value: rsiValue
+        timestamp: Date.now(),
+        confidence: 0.7,
+        reason: `RSI: ${rsiValue.toFixed(2)}`
       });
     }
 
+    const analysis: TechnicalAnalysisData = {
+      symbol: 'EURUSD', // This should come from parameters
+      timestamp: Date.now(),
+      signals: [{
+        symbol: 'EURUSD', // This should come from parameters
+        type: 'TECHNICAL',
+        price: prices[prices.length - 1],
+        stopLoss: prices[prices.length - 1] * 0.98,
+        timestamp: Date.now(),
+        confidence: 0.75,
+        reason: `RSI: ${rsiValue.toFixed(2)}, MACD: ${histogram.toFixed(4)}`
+      }],
+      historicalData: data,
+      indicators: {
+        rsi: [rsiValue],
+        macd: [{
+          macdLine,
+          signalLine,
+          histogram,
+          trend: macdLine > signalLine ? 'bullish' : 'bearish'
+        }],
+        sma: [fastSMA, slowSMA]
+      },
+      summary: `Technical analysis based on ${data.length} data points`
+    };
+
     return {
       success: true,
-      data: {
-        pair: 'EURUSD', // This should come from parameters
-        timestamp: data[data.length - 1].timestamp,
-        signals,
-        historicalData: data,
-        indicators: {
-          rsi: [rsiValue],
-          macd: [{
-            macdLine,
-            signalLine,
-            histogram,
-            trend: macdLine > signalLine ? 'bullish' : 'bearish'
-          }],
-          sma: [fastSMA, slowSMA]
-        },
-        summary: `Technical analysis based on ${data.length} data points`
-      }
+      data: analysis
     };
   } catch (error) {
     return {

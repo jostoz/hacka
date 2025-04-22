@@ -46,33 +46,19 @@ export async function getMarketData(pair: string, timeframe: string, periods: nu
   });
 }
 
-export async function calculateSignal(config: ForexConfig, data: FxData[]): Promise<ForexResponse<Signal>> {
-  if (data.length < config.periods) {
-    return {
-      success: false,
-      error: { 
-        message: 'Insufficient data points for analysis',
-        code: 'INSUFFICIENT_DATA'
-      }
-    };
-  }
-
-  // Implement signal calculation logic here
-  // This is a placeholder implementation
+export async function calculateSignal(data: FxData[], symbol: string): Promise<Signal> {
+  // Placeholder implementation - replace with actual signal calculation logic
   const lastPrice = data[data.length - 1].close;
-  const signal: Signal = {
-    symbol: `${config.pair.base}/${config.pair.quote}`,
-    entryPrice: lastPrice,
-    signal: 'hold',
-    confidence: 0.5,
-    positionSize: (config.capital * (config.riskPercentage / 100)) / (lastPrice * 0.01),
+  return {
+    symbol,
+    type: 'BUY',
+    price: lastPrice,
     stopLoss: lastPrice * 0.99,
-    justification: 'Análisis basado en indicadores técnicos',
-    type: 'technical',
-    value: lastPrice.toString()
+    takeProfit: lastPrice * 1.01,
+    timestamp: Date.now(),
+    confidence: 0.75,
+    reason: 'Technical analysis based signal'
   };
-
-  return { success: true, data: signal };
 }
 
 export async function generateForecast(data: FxData[]): Promise<ForexResponse<Forecast>> {
@@ -123,16 +109,17 @@ export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<T
   const smaSlow = lastPrice * (1 + (Math.random() - 0.5) * 0.01);
 
   const analysis: TechnicalAnalysisData = {
-    pair: 'EUR/USD',
+    symbol: 'EUR/USD',
     timestamp: Date.now(),
     signals: [{
       symbol: 'EUR/USD',
+      type: macdHistogram > 0 ? 'BUY' : macdHistogram < 0 ? 'SELL' : 'HOLD',
+      price: lastPrice,
       entryPrice: lastPrice,
-      signal: macdHistogram > 0 ? 'buy' : macdHistogram < 0 ? 'sell' : 'hold',
       confidence: Math.min(Math.abs(rsiValue - 50) / 50, 1),
-      positionSize: 1000,
       stopLoss: smaSlow * 0.98,
-      justification: `RSI: ${rsiValue.toFixed(2)}, MACD: ${macdHistogram.toFixed(4)}`
+      timestamp: Date.now(),
+      reason: `RSI: ${rsiValue.toFixed(2)}, MACD: ${macdHistogram.toFixed(4)}`
     }],
     historicalData: data,
     indicators: {

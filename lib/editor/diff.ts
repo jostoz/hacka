@@ -1,6 +1,5 @@
 import { Fragment } from 'prosemirror-model';
 import type { Schema, Node } from 'prosemirror-model';
-import { diff_match_patch } from 'diff-match-patch';
 
 export enum DiffType {
   None = "none",

@@ -311,7 +311,7 @@ export function TechnicalAnalysisBlock({
           <h4 className="text-lg font-semibold mb-2">Señales</h4>
           {data.signals.map((signal) => (
             <SignalCard
-              key={`${signal.symbol}-${signal.signal}-${signal.confidence}`}
+              key={`${signal.symbol}-${signal.type}-${signal.confidence}`}
               signal={signal}
             />
           ))}

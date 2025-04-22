@@ -41,7 +41,8 @@ export async function validateSignal(signal: Signal): Promise<boolean> {
 
     // Validate that the entry price is within a reasonable range of current price
     const currentPrice = (price.ask + price.bid) / 2;
-    const priceDiff = Math.abs(currentPrice - signal.entryPrice);
+    const entryPrice = signal.entryPrice ?? signal.price;
+    const priceDiff = Math.abs(currentPrice - entryPrice);
     const maxAllowedDiff = currentPrice * 0.02; // 2% tolerance
 
     return priceDiff <= maxAllowedDiff;

@@ -159,18 +159,18 @@ export function calculateSignal(
       period: 14 
     });
 
-    if (rsiValue < 30) {
+    const lastRsi = rsiValue[rsiValue.length - 1];
+    
+    if (lastRsi < 30) {
       const signal: Signal = {
         symbol: pair,
-        entryPrice: lastPrice,
-        signal: 'buy',
-        confidence: 0.75,
-        positionSize: riskAmount / (lastPrice * 0.01),
+        type: 'BUY',
+        price: lastPrice,
         stopLoss: lastPrice * 0.99,
         takeProfit: lastPrice * 1.02,
-        justification: 'Señal basada en análisis técnico y gestión de riesgo',
-        type: 'technical',
-        value: lastPrice
+        timestamp: Date.now(),
+        confidence: 0.75,
+        reason: 'Señal basada en análisis técnico y gestión de riesgo'
       };
 
       return {
@@ -180,14 +180,19 @@ export function calculateSignal(
     }
 
     // Si no hay señal clara, devolver hold
-    return {
+    const holdSignal: Signal = {
       symbol: pair,
-      entryPrice: lastPrice,
-      signal: 'hold',
-      confidence: 0.5,
-      positionSize: 1,
+      type: 'HOLD',
+      price: lastPrice,
       stopLoss: lastPrice * 0.99,
-      justification: 'No clear signal detected'
+      timestamp: Date.now(),
+      confidence: 0.5,
+      reason: 'No clear signal detected'
+    };
+
+    return {
+      success: true,
+      data: holdSignal
     };
   } catch (error) {
     return {
@@ -327,12 +332,12 @@ export async function fetchTechnicalAnalysisFromAPI(
       timestamp: Date.now(),
       signals: [{
         symbol: pair,
-        entryPrice: lastPrice,
-        signal: signalType,
-        confidence,
-        positionSize: 1000,
+        type: signalType === 'buy' ? 'BUY' : signalType === 'sell' ? 'SELL' : 'HOLD',
+        price: lastPrice,
         stopLoss: signalType === 'buy' ? priceLevels.support : priceLevels.resistance,
-        justification: `RSI: ${lastRsi.toFixed(2)}, MACD trend: ${lastMacd.trend}, Price: ${lastPrice}`
+        timestamp: Date.now(),
+        confidence,
+        reason: `RSI: ${lastRsi.toFixed(2)}, MACD trend: ${lastMacd.trend}, Price: ${lastPrice}`
       }],
       historicalData,
       indicators: {
@@ -392,12 +397,13 @@ export const forexTools = {
       return {
         success: response.success,
         data: response.success ? response.data : {
-          pair: 'EUR/USD',
-          signal: 'hold',
-          confidence: 0,
-          positionSize: 0,
+          symbol: 'EUR/USD',
+          type: 'HOLD',
+          price: 0,
           stopLoss: 0,
-          justification: response.error?.message || 'Error calculating signal'
+          timestamp: Date.now(),
+          confidence: 0,
+          reason: response.error?.message || 'Error calculating signal'
         }
       };
     }

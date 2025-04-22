@@ -50,13 +50,14 @@ export interface FxData {
 // Trading Signal Types
 export interface Signal {
   symbol: string;
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'HOLD' | 'TECHNICAL';
   price: number;
   stopLoss: number;
   takeProfit?: number;
   timestamp: number;
   confidence: number;
   reason?: string;
+  entryPrice?: number;
 }
 
 // Forecast Types

@@ -51,6 +51,7 @@ export function SignalCard({ signal, onCopy, onExecute }: SignalCardProps) {
       <div className="flex gap-2 justify-end">
         {onCopy && (
           <button
+            type="button"
             onClick={onCopy}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
           >
@@ -59,6 +60,7 @@ export function SignalCard({ signal, onCopy, onExecute }: SignalCardProps) {
         )}
         {onExecute && (
           <button
+            type="button"
             onClick={onExecute}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
