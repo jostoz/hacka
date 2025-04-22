@@ -10,8 +10,9 @@ import type {
 } from '@/lib/types/types';
 import { RSI, MACD, SMA } from 'technicalindicators';
 import { isValidForexPair, isValidTimeframe } from '../forex/constants';
-import { MarketDataFactory, type MarketDataConfig, type HistoricalDataParams } from '../capital/api';
+import { MarketDataFactory } from '@/lib/services/market-data/factory';
 import type { ForexResponse } from '../forex/types';
+import type { TimeInterval } from '@/lib/types/market-data';
 
 interface CapitalCandle {
   timestamp: number;
@@ -77,20 +78,11 @@ export async function getFxDataFromAPI(pair: string, timeframe: string, periods:
       throw new Error('Invalid forex pair or timeframe');
     }
 
-    // Configurar e inicializar el servicio de datos de mercado
-    const config: MarketDataConfig = {
-      apiKey: process.env.CAPITAL_API_KEY || '',
-      baseUrl: process.env.CAPITAL_API_URL || 'https://api-capital.backend-capital.com'
-    };
+    const factory = MarketDataFactory.getInstance();
     
-    const marketDataService = new MarketDataFactory(config);
-
-    // Formatear el par de divisas para Capital.com (e.g., EUR/USD -> EUR_USD)
-    const formattedPair = pair.replace('/', '_');
-
-    // Convertir timeframe al formato esperado por Capital.com
-    const capitalTimeframe = convertTimeframe(timeframe);
-
+    // Usar el proveedor de Capital.com
+    const provider = factory.getProvider('capital');
+    
     // Calcular el rango de fechas basado en los períodos solicitados
     const endDate = new Date();
     const startDate = new Date();
@@ -104,16 +96,18 @@ export async function getFxDataFromAPI(pair: string, timeframe: string, periods:
     const minutesBack = timeframeMinutes[timeframe] * periods;
     startDate.setMinutes(startDate.getMinutes() - minutesBack);
 
-    // Preparar los parámetros para la solicitud
-    const params: HistoricalDataParams = {
-      symbol: formattedPair,
-      interval: capitalTimeframe,
-      from: startDate.getTime(),
-      to: endDate.getTime()
-    };
+    const result = await provider.fetchData({
+      symbol: pair,
+      interval: timeframe as TimeInterval,
+      range: '1mo', // Valor por defecto
+      source: 'capital'
+    });
 
-    // Obtener los datos históricos
-    return await marketDataService.getHistoricalData(params);
+    if (!result.success || !result.data) {
+      throw new Error(result.error?.message || 'Error fetching market data');
+    }
+
+    return result.data.data;
 
   } catch (error) {
     // ADD: Log detailed error information
