@@ -49,20 +49,19 @@ export interface FxData {
 
 // Trading Signal Types
 export interface Signal {
-  type?: 'technical' | 'RSI' | string;
-  value?: string | number;
-  pair: string;
-  signal: 'buy' | 'sell' | 'hold';
-  confidence: number;
-  positionSize: number;
+  symbol: string;
+  type: 'BUY' | 'SELL';
+  price: number;
   stopLoss: number;
   takeProfit?: number;
-  justification: string;
+  timestamp: number;
+  confidence: number;
+  reason?: string;
 }
 
 // Forecast Types
 export interface Forecast {
-  pair: string;
+  symbol: string;
   nextPrice: number;
   confidence: number;
   timestamp: string;
@@ -76,7 +75,7 @@ export interface TechnicalAnalysisBlock {
 }
 
 export interface TechnicalAnalysisData {
-  pair: string;
+  symbol: string;
   timestamp: number;
   signals: Signal[];
   historicalData: FxData[];

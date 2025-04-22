@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -17,7 +18,9 @@ const nextConfig: NextConfig = {
     // Configure path aliases
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': process.cwd(),
+      '@': path.join(process.cwd()),
+      'components': path.join(process.cwd(), 'components'),
+      'lib': path.join(process.cwd(), 'lib'),
     };
     return config;
   },

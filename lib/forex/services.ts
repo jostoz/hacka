@@ -60,7 +60,8 @@ export function calculateSignal(
     
     // Aquí iría la lógica de cálculo de señales
     const signal: Signal = {
-      pair,
+      symbol: pair,
+      entryPrice: lastPrice,
       signal: 'buy',
       confidence: 0.75,
       positionSize: riskAmount / (lastPrice * 0.01), // Calculamos el tamaño de la posición basado en el riesgo
@@ -170,7 +171,8 @@ export function getTechnicalAnalysis(data: FxData[]): ForexResponse<TechnicalAna
     const signals: Signal[] = [];
     if (rsiValue < 30) {
       signals.push({
-        pair: 'EURUSD', // This should come from parameters
+        symbol: 'EURUSD', // This should come from parameters
+        entryPrice: prices[prices.length - 1],
         signal: 'buy',
         confidence: 0.7,
         positionSize: 1,

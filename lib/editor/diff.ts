@@ -38,13 +38,16 @@ export function nodesEqual(node1: Node, node2: Node): boolean {
   return content1.every((child, i) => nodesEqual(child, content2[i]));
 }
 
-export function diffEditor(schema: Schema, oldDoc: Node, newDoc: Node): Node {
+export function diffEditor(schema: Schema, oldDocJson: any, newDocJson: any): Node {
+  const oldDoc = schema.nodeFromJSON(oldDocJson);
+  const newDoc = schema.nodeFromJSON(newDocJson);
+  
   const diffContent: Node[] = [];
 
   // Helper to create a node with a specific diff mark
   const markNode = (node: Node, type: DiffType): Node => {
     if (type === DiffType.None) return node;
-    return node.mark([schema.marks.diff.create({ type })]);
+    return node.mark([schema.marks.diffMark.create({ type })]);
   };
 
   // Process content

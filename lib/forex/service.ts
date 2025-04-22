@@ -61,7 +61,8 @@ export async function calculateSignal(config: ForexConfig, data: FxData[]): Prom
   // This is a placeholder implementation
   const lastPrice = data[data.length - 1].close;
   const signal: Signal = {
-    pair: `${config.pair.base}/${config.pair.quote}`,
+    symbol: `${config.pair.base}/${config.pair.quote}`,
+    entryPrice: lastPrice,
     signal: 'hold',
     confidence: 0.5,
     positionSize: (config.capital * (config.riskPercentage / 100)) / (lastPrice * 0.01),
@@ -91,7 +92,7 @@ export async function generateForecast(data: FxData[]): Promise<ForexResponse<Fo
   const prevPrice = data[data.length - 2].close;
   
   const forecast: Forecast = {
-    pair: 'EUR/USD', // Default pair, should be passed as parameter
+    symbol: 'EUR/USD', // Default pair, should be passed as parameter
     nextPrice: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
     confidence: 0.75,
     timestamp: new Date().toISOString()
@@ -125,7 +126,8 @@ export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<T
     pair: 'EUR/USD',
     timestamp: Date.now(),
     signals: [{
-      pair: 'EUR/USD',
+      symbol: 'EUR/USD',
+      entryPrice: lastPrice,
       signal: macdHistogram > 0 ? 'buy' : macdHistogram < 0 ? 'sell' : 'hold',
       confidence: Math.min(Math.abs(rsiValue - 50) / 50, 1),
       positionSize: 1000,

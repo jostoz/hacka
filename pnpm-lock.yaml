@@ -213,6 +213,9 @@ importers:
       '@biomejs/biome':
         specifier: 1.9.4
         version: 1.9.4
+      '@types/diff-match-patch':
+        specifier: ^1.0.36
+        version: 1.0.36
       eslint:
         specifier: ^8.57.0
         version: 8.57.1

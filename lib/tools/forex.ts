@@ -154,21 +154,40 @@ export function calculateSignal(
     const lastPrice = historicalData[historicalData.length - 1].close;
     
     // Aquí iría la lógica de cálculo de señales
-    const signal: Signal = {
-      pair,
-      signal: 'buy',
-      confidence: 0.75,
-      positionSize: riskAmount / (lastPrice * 0.01), // Calculamos el tamaño de la posición basado en el riesgo
-      stopLoss: lastPrice * 0.99,
-      takeProfit: lastPrice * 1.02,
-      justification: 'Señal basada en análisis técnico y gestión de riesgo',
-      type: 'technical',
-      value: lastPrice
-    };
+    const rsiValue = RSI.calculate({ 
+      values: historicalData.map(d => d.close), 
+      period: 14 
+    });
 
+    if (rsiValue < 30) {
+      const signal: Signal = {
+        symbol: pair,
+        entryPrice: lastPrice,
+        signal: 'buy',
+        confidence: 0.75,
+        positionSize: riskAmount / (lastPrice * 0.01),
+        stopLoss: lastPrice * 0.99,
+        takeProfit: lastPrice * 1.02,
+        justification: 'Señal basada en análisis técnico y gestión de riesgo',
+        type: 'technical',
+        value: lastPrice
+      };
+
+      return {
+        success: true,
+        data: signal
+      };
+    }
+
+    // Si no hay señal clara, devolver hold
     return {
-      success: true,
-      data: signal
+      symbol: pair,
+      entryPrice: lastPrice,
+      signal: 'hold',
+      confidence: 0.5,
+      positionSize: 1,
+      stopLoss: lastPrice * 0.99,
+      justification: 'No clear signal detected'
     };
   } catch (error) {
     return {
@@ -186,7 +205,7 @@ function generateForecast(data: FxData[]): Forecast {
   const lastPrice = data[data.length - 1].close;
   
   return {
-    pair: 'EUR/USD', // Par por defecto si no está en FxData
+    symbol: 'EUR/USD', // Par por defecto si no está en FxData
     nextPrice: lastPrice * (1 + (Math.random() - 0.5) * 0.01), // Usar nextPrice en lugar de prediction
     confidence: 0.75,
     timestamp: new Date().toISOString()
@@ -304,13 +323,14 @@ export async function fetchTechnicalAnalysisFromAPI(
 
     // Crear objeto de análisis técnico
     const technicalAnalysis: TechnicalAnalysisData = {
-      pair,
+      symbol: pair,
       timestamp: Date.now(),
       signals: [{
-        pair,
+        symbol: pair,
+        entryPrice: lastPrice,
         signal: signalType,
         confidence,
-        positionSize: 1000, // Valor por defecto, debería calcularse basado en el capital y riesgo
+        positionSize: 1000,
         stopLoss: signalType === 'buy' ? priceLevels.support : priceLevels.resistance,
         justification: `RSI: ${lastRsi.toFixed(2)}, MACD trend: ${lastMacd.trend}, Price: ${lastPrice}`
       }],

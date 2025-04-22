@@ -7,17 +7,18 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { forexTools } from '@/lib/tools/forex';
 import { SignalCard } from './SignalCard';
-import type { Signal, Forecast, TechnicalAnalysisData, FxData } from '@/lib/types/types';
-import type { Timeframe } from '@/lib/forex/types';
+import type { Signal, Forecast, TechnicalAnalysisData } from '@/lib/types/types';
+import type { Timeframe, FxData } from '@/lib/forex/types';
+import type { MouseEventHandler } from 'react';
 
 // Constantes para las opciones del formulario
 const TIMEFRAME_OPTIONS = [
-  { value: '1m', label: '1 minuto' },
-  { value: '5m', label: '5 minutos' },
-  { value: '15m', label: '15 minutos' },
-  { value: '1h', label: '1 hora' },
-  { value: '4h', label: '4 horas' },
-  { value: '1d', label: '1 día' }
+  { value: '1m', label: '1 minute' },
+  { value: '5m', label: '5 minutes' },
+  { value: '15m', label: '15 minutes' },
+  { value: '1h', label: '1 hour' },
+  { value: '4h', label: '4 hours' },
+  { value: '1d', label: '1 day' }
 ] as const;
 
 const FOREX_PAIRS = [
@@ -33,7 +34,7 @@ const FOREX_PAIRS = [
 type AnalysisType = 'signal' | 'forecast' | 'technical';
 
 interface FormConfig {
-  pair: string;
+  symbol: string;
   timeframe: Timeframe;
   periods: number;
   capital: number;
@@ -43,7 +44,7 @@ interface FormConfig {
 export function ForexForm() {
   // Estado para la configuración
   const [config, setConfig] = useState<FormConfig>({
-    pair: 'EUR/USD',
+    symbol: 'EUR/USD',
     timeframe: '1h',
     periods: 100,
     capital: 10000,
@@ -60,18 +61,25 @@ export function ForexForm() {
 
   // Función para manejar el análisis
   const handleAnalysis = async (type: AnalysisType) => {
+    if (!config.symbol || !config.timeframe || !config.periods || !config.capital || !config.riskPercent) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Primero obtenemos los datos del mercado
       const marketData = await forexTools.get_fx_data.execute({
-        pair: config.pair,
+        pair: config.symbol,
         timeframe: config.timeframe,
         periods: config.periods
       });
 
-      // Dependiendo del tipo de análisis solicitado
+      if (!marketData?.data) {
+        throw new Error('Failed to fetch market data');
+      }
+
       switch (type) {
         case 'signal': {
           const tradingSignal = await forexTools.calculate_quant_signal.execute({
@@ -79,59 +87,57 @@ export function ForexForm() {
             capital: config.capital,
             risk_percent: config.riskPercent
           });
-          
-          const quantSignal = tradingSignal.data as Signal;
-          setSignal({
-            pair: config.pair,
-            signal: quantSignal.signal,
-            confidence: quantSignal.confidence,
-            positionSize: quantSignal.positionSize,
-            stopLoss: quantSignal.stopLoss,
-            takeProfit: quantSignal.takeProfit,
-            justification: `Señal generada basada en análisis cuantitativo para ${config.pair} en timeframe ${config.timeframe}`
-          });
+
+          if (tradingSignal.data) {
+            const quantSignal = tradingSignal.data as Signal;
+            const lastPrice = marketData.data[marketData.data.length - 1]?.close ?? 0;
+            
+            setSignal({
+              symbol: config.symbol,
+              type: quantSignal.type,
+              price: lastPrice,
+              confidence: quantSignal.confidence,
+              stopLoss: quantSignal.stopLoss,
+              takeProfit: quantSignal.takeProfit,
+              timestamp: Date.now(),
+              reason: `Signal generated based on quantitative analysis for ${config.symbol} on ${config.timeframe} timeframe`
+            });
+          }
           break;
         }
-
         case 'forecast': {
-          const forecastData = await forexTools.get_simple_forecast.execute({
-            data: marketData.data
+          const forecast = await forexTools.get_simple_forecast.execute({
+            pair: config.symbol
           });
-          
-          const forexForecast = forecastData.data as Forecast;
-          setForecast({
-            pair: config.pair,
-            nextPrice: forexForecast.nextPrice,
-            confidence: forexForecast.confidence,
-            timestamp: new Date().toISOString()
-          });
+          setForecast(forecast.data as Forecast);
           break;
         }
-
         case 'technical': {
-          const analysis = await forexTools.fetchTechnicalAnalysis.execute({
-            pair: config.pair
+          const technicalAnalysis = await forexTools.fetchTechnicalAnalysis.execute({
+            pair: config.symbol
           });
-          setTechnicalAnalysis(analysis.data as TechnicalAnalysisData);
+          setTechnicalAnalysis(technicalAnalysis.data as TechnicalAnalysisData);
           break;
         }
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignalClick: MouseEventHandler<HTMLButtonElement> = () => handleAnalysis('signal');
+
   return (
     <Card className="p-6">
       <form className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="pair">Par de Divisas</Label>
+          <Label htmlFor="symbol">Currency Pair</Label>
           <Select
-            value={config.pair}
-            onValueChange={(value) => setConfig({ ...config, pair: value })}
+            value={config.symbol}
+            onValueChange={(value) => setConfig({ ...config, symbol: value })}
           >
             {FOREX_PAIRS.map((pair) => (
               <option key={pair.value} value={pair.value}>
@@ -142,7 +148,7 @@ export function ForexForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="timeframe">Marco Temporal</Label>
+          <Label htmlFor="timeframe">Timeframe</Label>
           <Select
             value={config.timeframe}
             onValueChange={(value) => setConfig({ ...config, timeframe: value as Timeframe })}
@@ -156,7 +162,7 @@ export function ForexForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="periods">Períodos a Analizar</Label>
+          <Label htmlFor="periods">Analysis Periods</Label>
           <Input
             id="periods"
             type="number"
@@ -168,7 +174,7 @@ export function ForexForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="capital">Capital Disponible ($)</Label>
+          <Label htmlFor="capital">Available Capital ($)</Label>
           <Input
             id="capital"
             type="number"
@@ -180,7 +186,7 @@ export function ForexForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="riskPercent">Porcentaje de Riesgo (%)</Label>
+          <Label htmlFor="riskPercent">Risk Percentage (%)</Label>
           <Input
             id="riskPercent"
             type="number"
@@ -195,60 +201,53 @@ export function ForexForm() {
         <div className="flex gap-2">
           <Button 
             type="button" 
-            onClick={() => handleAnalysis('signal')}
+            onClick={handleSignalClick}
             disabled={loading}
           >
-            Generar Señal
-          </Button>
-          <Button 
-            type="button" 
-            onClick={() => handleAnalysis('forecast')}
-            disabled={loading}
-            variant="outline"
-          >
-            Generar Pronóstico
-          </Button>
-          <Button 
-            type="button" 
-            onClick={() => handleAnalysis('technical')}
-            disabled={loading}
-            variant="outline"
-          >
-            Análisis Técnico
+            Generate Signal
           </Button>
         </div>
       </form>
 
-      {loading && (
-        <div className="mt-4 text-center">
-          Analizando mercado...
-        </div>
-      )}
-
       {error && (
-        <div className="mt-4 text-red-500">
-          Error: {error}
+        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
+          {error}
         </div>
       )}
 
       {signal && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Señal de Trading</h3>
+          <h3 className="text-lg font-semibold mb-2">Trading Signal</h3>
           <SignalCard signal={signal} />
         </div>
       )}
 
       {forecast && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Pronóstico</h3>
-          {/* Aquí puedes agregar un componente para mostrar el pronóstico */}
+          <h3 className="text-lg font-semibold mb-2">Price Forecast</h3>
+          <Card className="p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Next Price</p>
+                <p className="font-medium">{forecast.nextPrice.toFixed(5)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Confidence</p>
+                <p className="font-medium">{(forecast.confidence * 100).toFixed(1)}%</p>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
 
       {technicalAnalysis && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Análisis Técnico</h3>
-          {/* Aquí puedes agregar un componente para mostrar el análisis técnico */}
+          <h3 className="text-lg font-semibold mb-2">Technical Analysis</h3>
+          <Card className="p-4">
+            <pre className="text-sm whitespace-pre-wrap">
+              {JSON.stringify(technicalAnalysis, null, 2)}
+            </pre>
+          </Card>
         </div>
       )}
     </Card>

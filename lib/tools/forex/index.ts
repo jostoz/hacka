@@ -1,4 +1,4 @@
-import { type Signal } from "@/types/signal";
+import type { Signal } from "@/lib/types/types";
 import yahooFinance from "yahoo-finance2";
 
 export type ForexPair = {

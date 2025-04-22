@@ -1,7 +1,6 @@
 // components/SignalCard.tsx
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import type { Signal } from '@/lib/types/types';
-import type { ButtonProps } from '@/components/ui/button';
 
 interface SignalCardProps {
   signal: Signal;
@@ -11,65 +10,62 @@ interface SignalCardProps {
 
 export function SignalCard({ signal, onCopy, onExecute }: SignalCardProps) {
   return (
-    <div className="rounded-lg border p-4 space-y-4">
+    <Card className="p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">{signal.pair}</h3>
-        <span className={`px-2 py-1 rounded ${
-          signal.signal === 'buy' ? 'bg-green-100 text-green-800' :
-          signal.signal === 'sell' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {signal.signal.toUpperCase()}
-        </span>
+        <div>
+          <h3 className="text-lg font-semibold">{signal.symbol}</h3>
+          <p className={`text-sm font-medium ${signal.type === 'BUY' ? 'text-green-600' : 'text-red-600'}`}>
+            {signal.type}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Confidence</p>
+          <p className="font-medium">{(signal.confidence * 100).toFixed(1)}%</p>
+        </div>
       </div>
-      
-      <div className="grid grid-cols-2 gap-2 text-sm">
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-gray-500">Confidence</p>
-          <p>{(signal.confidence * 100).toFixed(1)}%</p>
+          <p className="text-sm text-gray-600">Entry Price</p>
+          <p className="font-medium">{signal.price.toFixed(5)}</p>
         </div>
         <div>
-          <p className="text-gray-500">Position Size</p>
-          <p>{signal.positionSize} units</p>
-        </div>
-        <div>
-          <p className="text-gray-500">Stop Loss</p>
-          <p>{signal.stopLoss}</p>
+          <p className="text-sm text-gray-600">Stop Loss</p>
+          <p className="font-medium">{signal.stopLoss.toFixed(5)}</p>
         </div>
         {signal.takeProfit && (
           <div>
-            <p className="text-gray-500">Take Profit</p>
-            <p>{signal.takeProfit}</p>
+            <p className="text-sm text-gray-600">Take Profit</p>
+            <p className="font-medium">{signal.takeProfit.toFixed(5)}</p>
           </div>
         )}
       </div>
 
-      <div>
-        <p className="text-gray-500">Justification</p>
-        <p className="text-sm">{signal.justification}</p>
-      </div>
+      {signal.reason && (
+        <div>
+          <p className="text-sm text-gray-600">Reason</p>
+          <p className="text-sm">{signal.reason}</p>
+        </div>
+      )}
 
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 justify-end">
         {onCopy && (
-          <Button 
-            onClick={onCopy} 
-            variant="outline" 
-            size="sm"
-            type="button"
+          <button
+            onClick={onCopy}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
           >
-            Copy Signal
-          </Button>
+            Copy
+          </button>
         )}
         {onExecute && (
-          <Button 
-            onClick={onExecute} 
-            size="sm"
-            type="button"
+          <button
+            onClick={onExecute}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
-            Execute Order
-          </Button>
+            Execute
+          </button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
