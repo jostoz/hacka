@@ -15,7 +15,7 @@ interface RateLimitConfig {
 
 // Configuraciones predefinidas para diferentes tipos de límites
 const RATE_LIMITS: Record<RateLimitType, { requests: number; duration: number }> = {
-  chat: { requests: 20, duration: 60 },    // 20 mensajes por minuto
+  chat: { requests: 30, duration: 60 },    // 30 mensajes por minuto (más permisivo)
   auth: { requests: 5, duration: 60 },     // 5 intentos de auth por minuto
   api: { requests: 100, duration: 60 }     // 100 llamadas API por minuto
 };
@@ -31,13 +31,38 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     })
   : null;
 
+// Mejorar el manejo de errores para rate limiting
+export async function getRateLimiter(type: RateLimitType) {
+  if (!redis) {
+    logger.warn('Rate limiting is disabled - Redis not configured');
+    return null;
+  }
+
+  try {
+    return new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(RATE_LIMITS[type].requests, `${RATE_LIMITS[type].duration} s`),
+      analytics: true,
+      prefix: `ratelimit:${type}`,
+    });
+  } catch (error) {
+    logger.error('Failed to create rate limiter:', error);
+    return null;
+  }
+}
+
+// Función mejorada para obtener IP del cliente
 function getClientIp(request: NextRequest): string {
-  // Intenta obtener la IP real del cliente a través de headers comunes
-  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0];
-  const realIp = request.headers.get('x-real-ip');
-  
-  // Usa la primera IP válida encontrada o 'anonymous' como fallback
-  return forwardedFor || realIp || 'anonymous';
+  try {
+    const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
+    const realIp = request.headers.get('x-real-ip')?.trim();
+    const cfConnectingIp = request.headers.get('cf-connecting-ip')?.trim();
+    
+    return forwardedFor || realIp || cfConnectingIp || 'anonymous';
+  } catch (error) {
+    logger.error('Error getting client IP:', error);
+    return 'anonymous';
+  }
 }
 
 export async function rateLimit(

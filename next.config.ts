@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     ppr: true,
+    serverActions: {
+      bodySizeLimit: '10mb', // Límite para archivos y mensajes grandes
+    },
   },
   serverExternalPackages: ['bcrypt-ts'],
   images: {
@@ -22,8 +25,42 @@ const nextConfig: NextConfig = {
       'components': path.join(process.cwd(), 'components'),
       'lib': path.join(process.cwd(), 'lib'),
     };
+
+    // Optimizaciones para el chat
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
+          cacheGroups: {
+            chat: {
+              test: /[\\/]components[\\/]chat[\\/]/,
+              name: 'chat',
+              chunks: 'all',
+              priority: 10,
+            },
+          },
+        },
+      };
+    }
+
     return config;
   },
+  headers: async () => {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+        ]
+      }
+    ];
+  }
 };
 
 export default nextConfig;

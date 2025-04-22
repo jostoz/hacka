@@ -112,11 +112,15 @@ export async function POST(request: Request) {
       return new Response(
         JSON.stringify({ 
           error: 'Datos de solicitud inválidos',
-          details: validatedData.error.errors 
+          details: validatedData.error.errors,
+          code: 'INVALID_REQUEST'
         }),
         { 
           status: 400,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
         }
       );
     }
@@ -128,10 +132,16 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       logger.warn('Unauthorized access attempt', { id });
       return new Response(
-        JSON.stringify({ error: 'No autorizado' }),
+        JSON.stringify({ 
+          error: 'No autorizado',
+          code: 'UNAUTHORIZED'
+        }),
         { 
           status: 401,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
         }
       );
     }
@@ -141,10 +151,16 @@ export async function POST(request: Request) {
     if (!model) {
       logger.error('Model not found', { modelId });
       return new Response(
-        JSON.stringify({ error: 'Modelo no encontrado' }),
+        JSON.stringify({ 
+          error: 'Modelo no encontrado',
+          code: 'MODEL_NOT_FOUND'
+        }),
         { 
           status: 404,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
         }
       );
     }
@@ -559,7 +575,32 @@ export async function POST(request: Request) {
         }),
         { 
           status: 500,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        }
+      );
+    }
+
+    // Mejorar el manejo de errores específicos
+    if (error instanceof Error) {
+      const errorCode = error.name === 'AbortError' ? 'TIMEOUT' :
+                       error.name === 'TypeError' ? 'NETWORK_ERROR' :
+                       'INTERNAL_ERROR';
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Error interno del servidor',
+          code: errorCode,
+          details: error.message
+        }),
+        { 
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
         }
       );
     }
@@ -567,11 +608,15 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({ 
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : 'Error desconocido'
+        code: 'UNKNOWN_ERROR',
+        details: 'Error desconocido'
       }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
       }
     );
   }
