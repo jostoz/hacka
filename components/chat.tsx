@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 import { ChatHeader } from '@/components/chat-header';
 import { PreviewMessage, ThinkingMessage } from '@/components/message';
@@ -35,6 +36,7 @@ export function Chat({
   initialMessages: Array<Message>;
   selectedModelId: string;
 }) {
+  const router = useRouter();
   const { mutate } = useSWRConfig();
   const [error, setError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -89,6 +91,7 @@ export function Chat({
         const sessionRefreshed = await refreshSession();
         if (!sessionRefreshed) {
           toast.error('No se pudo restaurar la sesión. Por favor, vuelve a iniciar sesión.');
+          router.push('/login');
         }
         return;
       }
