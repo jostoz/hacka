@@ -9,10 +9,10 @@ export type TimeInterval =
     | '30m' 
     | '1h' 
     | '4h' 
-    | '1d' 
-    | '1w';
+    | 'D'
+    | 'W';
 
-export type TimeRange = '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max';
+export type TimeRange = 'D' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max';
 
 export interface MarketDataParams {
   symbol: string;

@@ -76,8 +76,8 @@ async function getFxDataFromAPI(pair: string, timeframe: string, periods: number
       '30m': 'MINUTE_30',
       '1h': 'HOUR_1',
       '4h': 'HOUR_4',
-      '1d': 'DAY_1',
-      '1w': 'WEEK_1'
+      'D': 'DAY_1',
+      'W': 'WEEK_1'
     };
     
     const capitalTimeframe = timeframeMap[timeframe];
@@ -92,7 +92,7 @@ async function getFxDataFromAPI(pair: string, timeframe: string, periods: number
     // Ajustar la fecha de inicio según el timeframe
     const timeframeMinutes: Record<string, number> = {
       '1m': 1, '5m': 5, '15m': 15, '30m': 30,
-      '1h': 60, '4h': 240, '1d': 1440, '1w': 10080
+      '1h': 60, '4h': 240, 'D': 1440, 'W': 10080
     };
     
     const minutesBack = timeframeMinutes[timeframe] * periods;
@@ -529,3 +529,9 @@ const validateForexParams = (params: Record<string, unknown>): boolean => {
     }
   });
 };
+
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | 'D' | 'W';
+
+export function isTimeframe(value: string): value is Timeframe {
+  return ['1m', '5m', '15m', '30m', '1h', '4h', 'D', 'W'].includes(value);
+}

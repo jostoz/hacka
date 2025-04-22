@@ -1,5 +1,6 @@
 // components/ForexAnalysis.tsx
 import { useState } from 'react';
+import type { ChangeEvent } from 'react';
 import { forexTools } from '@/lib/tools/forex';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
 import type { Signal, Forecast, TechnicalAnalysisData, FxData, ToolResult } from '@/lib/types/types';
 import { TechnicalAnalysisBlock } from './technical-analysis-block';
+import type { ForexPair, Timeframe } from '@/lib/forex/constants';
 
 interface ForexAnalysisProps {
-  symbol: string;
-  timeframe: string;
+  symbol: ForexPair;
+  timeframe: Timeframe;
   periods: number;
 }
 
@@ -22,7 +24,17 @@ interface ForexConfig {
 
 interface FxDataResult extends ToolResult<FxData[]> {}
 
-const TIMEFRAME_OPTIONS = [
+interface TimeframeOption {
+  value: Timeframe;
+  label: string;
+}
+
+interface ForexPairOption {
+  value: ForexPair;
+  label: string;
+}
+
+const TIMEFRAME_OPTIONS: TimeframeOption[] = [
   { value: '1m', label: '1 minuto' },
   { value: '5m', label: '5 minutos' },
   { value: '15m', label: '15 minutos' },
@@ -31,7 +43,7 @@ const TIMEFRAME_OPTIONS = [
   { value: '1d', label: '1 día' }
 ];
 
-const FOREX_PAIRS = [
+const FOREX_PAIRS: ForexPairOption[] = [
   { value: 'EUR/USD', label: 'EUR/USD' },
   { value: 'GBP/USD', label: 'GBP/USD' },
   { value: 'USD/JPY', label: 'USD/JPY' },
@@ -53,6 +65,14 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
+
+  const handleCapitalChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setConfig(prev => ({ ...prev, capital: Number(e.target.value) }));
+  };
+
+  const handleRiskPercentChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setConfig(prev => ({ ...prev, riskPercent: Number(e.target.value) }));
+  };
 
   const fetchMarketData = async (): Promise<FxDataResult> => {
     try {
@@ -184,7 +204,7 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
             min="100"
             step="100"
             value={config.capital}
-            onChange={(e) => setConfig({ ...config, capital: Number(e.target.value) })}
+            onChange={handleCapitalChange}
           />
         </div>
 
@@ -197,7 +217,7 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
             max="10"
             step="0.1"
             value={config.riskPercent}
-            onChange={(e) => setConfig({ ...config, riskPercent: Number(e.target.value) })}
+            onChange={handleRiskPercentChange}
           />
         </div>
 

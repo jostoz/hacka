@@ -4,7 +4,7 @@ import type { Signal, Forecast, TechnicalAnalysisData, FxData } from '../types/t
 export type { Signal, Forecast, TechnicalAnalysisData, FxData };
 
 // Forex-specific types
-export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | 'D' | 'W' | 'M';
 
 export interface ForexPair {
   base: string;

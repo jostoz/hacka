@@ -9,7 +9,8 @@ export const FOREX_PAIRS = [
   'NZD/USD',
   'EUR/GBP',
   'EUR/JPY',
-  'GBP/JPY'
+  'GBP/JPY',
+  'USD/MXN'
 ] as const;
 
 // Available timeframes
