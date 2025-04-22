@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-const FxLogo = ({ size = 32 }: { size?: number }) => {
+const FxLogo = ({ size = 96 }: { size?: number }) => {
   return (
     <svg 
       width={size} 
