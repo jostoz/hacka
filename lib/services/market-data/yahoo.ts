@@ -14,7 +14,7 @@ import { validateHistoricalDataParams, validateOHLCVData, calculateReturns, calc
 interface YahooQueryOptions {
     period1: Date;
     period2: Date;
-    interval: 'D' | '1mo' | 'W';
+    interval: '1d' | '1mo' | '1wk';
 }
 
 interface YahooHistoricalRow {
@@ -69,7 +69,9 @@ export class YahooFinanceService extends BaseMarketDataService implements Market
 
             // Fetch historical data
             const result = await yahooFinance.historical(symbol, {
-                ...queryOptions,
+                period1: queryOptions.period1,
+                period2: queryOptions.period2,
+                interval: this.mapInterval(interval),
                 events: 'history',
                 includeAdjustedClose: true
             }) as YahooHistoricalRow[];
@@ -145,7 +147,7 @@ export class YahooFinanceService extends BaseMarketDataService implements Market
     private calculateStartDate(range: TimeRange): Date {
         const now = new Date();
         const ranges: Record<TimeRange, number> = {
-            '1d': 1,
+            'D': 1,
             '5d': 5,
             '1mo': 30,
             '3mo': 90,
