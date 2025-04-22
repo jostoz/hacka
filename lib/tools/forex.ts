@@ -40,7 +40,7 @@ interface IndicatorResult {
 }
 
 // Schema de validación para FxData
-const fxDataSchema = z.object({
+export const fxDataSchema = z.object({
   timestamp: z.number(),
   open: z.number(),
   high: z.number(),
@@ -50,7 +50,7 @@ const fxDataSchema = z.object({
 });
 
 // Funciones de API
-async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData[]> {
+export async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData[]> {
   try {
     // Validar el par de divisas y timeframe
     if (!isValidForexPair(pair) || !isValidTimeframe(timeframe)) {

@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.0.0-canary.3",
