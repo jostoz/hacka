@@ -27,6 +27,7 @@ import { ArrowUpIcon, PaperclipIcon, StopIcon } from './icons';
 import { PreviewAttachment } from './preview-attachment';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+
 const suggestedActions = [
   {
     title: 'Analiza el mercado',
@@ -87,6 +88,7 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -130,24 +132,57 @@ export function MultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
-  const submitForm = useCallback(() => {
-    window.history.replaceState({}, '', `/chat/${chatId}`);
+  // Función mejorada para manejar el envío
+  const submitForm = useCallback(async () => {
+    if (isSubmitting || isLoading) {
+      toast.error('Por favor espera a que termine la respuesta actual');
+      return;
+    }
+    
+    // Validar longitud del prompt
+    if (input.length > 4000) {
+      toast.error('El mensaje es demasiado largo. Por favor, divídelo en partes más pequeñas.');
+      return;
+    }
 
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
-    });
+    // Validar complejidad del prompt
+    const complexityScore = input.split(' ').length + 
+                         (input.match(/[.!?]/g) || []).length * 2;
+    
+    if (complexityScore > 200) {
+      toast.warning('Esta pregunta parece compleja. Considera dividirla en preguntas más específicas.');
+    }
+    
+    try {
+      setIsSubmitting(true);
+      window.history.replaceState({}, '', `/chat/${chatId}`);
 
-    setAttachments([]);
-    setLocalStorageInput('');
+      await handleSubmit(undefined, {
+        experimental_attachments: attachments,
+      });
 
-    if (width && width > 768) {
-      textareaRef.current?.focus();
+      setAttachments([]);
+      setLocalStorageInput('');
+      setInput('');
+
+      if (width && width > 768) {
+        textareaRef.current?.focus();
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('Error al enviar el mensaje');
+    } finally {
+      setIsSubmitting(false);
     }
   }, [
+    isSubmitting,
+    isLoading,
+    input,
     attachments,
     handleSubmit,
     setAttachments,
     setLocalStorageInput,
+    setInput,
     width,
     chatId,
   ]);
@@ -282,12 +317,13 @@ export function MultimodalInput({
         )}
         rows={3}
         autoFocus
+        disabled={isLoading || isSubmitting}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
 
-            if (isLoading) {
-              toast.error('Please wait for the model to finish its response!');
+            if (isLoading || isSubmitting) {
+              toast.error('Por favor espera a que termine la respuesta actual');
             } else {
               submitForm();
             }
@@ -301,8 +337,9 @@ export function MultimodalInput({
           onClick={(event) => {
             event.preventDefault();
             stop();
-            setMessages((messages) => sanitizeUIMessages(messages));
+            setMessages((messages) => messages.filter(m => m.role !== 'assistant' || m.content));
           }}
+          disabled={!isLoading}
         >
           <StopIcon size={14} />
         </Button>
@@ -313,7 +350,7 @@ export function MultimodalInput({
             event.preventDefault();
             submitForm();
           }}
-          disabled={input.length === 0 || uploadQueue.length > 0}
+          disabled={input.length === 0 || uploadQueue.length > 0 || isSubmitting}
         >
           <ArrowUpIcon size={14} />
         </Button>
@@ -326,7 +363,7 @@ export function MultimodalInput({
           fileInputRef.current?.click();
         }}
         variant="outline"
-        disabled={isLoading}
+        disabled={isLoading || isSubmitting}
       >
         <PaperclipIcon size={14} />
       </Button>

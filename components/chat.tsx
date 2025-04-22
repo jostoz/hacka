@@ -1,9 +1,9 @@
 'use client';
 
-import type { Attachment, Message } from 'ai';
+import type { Attachment, Message, ChatRequestOptions } from 'ai';
 import { useChat } from 'ai/react';
 import { AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 import { toast } from 'sonner';
@@ -38,12 +38,13 @@ export function Chat({
   const { mutate } = useSWRConfig();
   const [error, setError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { isValid: isSessionValid, error: sessionError, refreshSession } = useSession();
 
   const {
     messages,
     setMessages,
-    handleSubmit,
+    handleSubmit: originalHandleSubmit,
     input,
     setInput,
     append,
@@ -54,11 +55,34 @@ export function Chat({
     body: { id, modelId: selectedModelId },
     initialMessages,
     onFinish: () => {
+      setIsProcessing(false);
       mutate('/api/history');
     },
     onError: async (error: ChatError) => {
+      setIsProcessing(false);
       console.error('Chat error:', error);
       
+      // Añadir más información de diagnóstico
+      console.debug('Error context:', {
+        isOnline: navigator.onLine,
+        sessionValid: isSessionValid,
+        messageCount: messages.length,
+        lastMessageType: messages.length > 0 ? messages[messages.length - 1].role : 'none'
+      });
+      
+      // Manejar errores de timeout
+      if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+        setError('La respuesta está tomando demasiado tiempo. Por favor, intenta con una pregunta más corta o específica.');
+        return;
+      }
+
+      // Manejar errores de streaming
+      if (error.message?.includes('stream') || error.message?.includes('connection closed')) {
+        setError('Se perdió la conexión con el servidor. Intentando reconectar...');
+        await handleRetry();
+        return;
+      }
+
       // Manejar errores de autenticación
       if (error.status === 401 || error.message?.includes('401') || error.message?.includes('No autorizado')) {
         setError('Sesión expirada. Por favor, vuelve a iniciar sesión.');
@@ -117,32 +141,78 @@ export function Chat({
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
 
-  // Función para reintentar
+  // Envolver handleSubmit para manejar el estado de procesamiento
+  const handleSubmit = useCallback(async (
+    event?: { preventDefault?: () => void },
+    chatRequestOptions?: ChatRequestOptions,
+  ) => {
+    if (isProcessing || isLoading) {
+      toast.error('Por favor espera a que termine la respuesta actual');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      await originalHandleSubmit(event, chatRequestOptions);
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      setIsProcessing(false);
+      toast.error('Error al procesar tu mensaje');
+    }
+  }, [isProcessing, isLoading, originalHandleSubmit]);
+
+  // Mejorar la función de stop
+  const handleStop = useCallback(() => {
+    stop();
+    setIsProcessing(false);
+    setMessages((messages) => messages.filter(m => m.role !== 'assistant' || m.content));
+  }, [stop, setMessages]);
+
+  // Función para reintentar mejorada
   const handleRetry = async () => {
     if (isRetrying) return;
     setIsRetrying(true);
     setError(null);
-    try {
-      if (!navigator.onLine) {
-        throw new Error('Sin conexión a internet');
-      }
+    
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        if (!navigator.onLine) {
+          throw new Error('Sin conexión a internet');
+        }
 
-      if (!isSessionValid) {
-        const sessionRefreshed = await refreshSession();
-        if (!sessionRefreshed) {
-          throw new Error('No se pudo restaurar la sesión');
+        // Esperar un tiempo exponencial entre reintentos
+        if (retryCount > 0) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        }
+
+        if (!isSessionValid) {
+          const sessionRefreshed = await refreshSession();
+          if (!sessionRefreshed) {
+            throw new Error('No se pudo restaurar la sesión');
+          }
+        }
+        
+        await mutate('/api/chat');
+        toast.success('Conexión restaurada');
+        return;
+      } catch (err) {
+        console.error(`Retry attempt ${retryCount + 1} failed:`, err);
+        retryCount++;
+        
+        if (retryCount === maxRetries) {
+          setError(err instanceof Error ? 
+            err.message : 
+            'No se pudo restablecer la conexión después de varios intentos'
+          );
+          toast.error('No se pudo restablecer la conexión');
         }
       }
-      
-      await mutate('/api/chat');
-      toast.success('Conexión restaurada');
-    } catch (err) {
-      console.error('Retry error:', err);
-      setError(err instanceof Error ? err.message : 'Error al reintentar la operación');
-      toast.error('No se pudo restablecer la conexión');
-    } finally {
-      setIsRetrying(false);
     }
+    
+    setIsRetrying(false);
   };
 
   return (
@@ -197,7 +267,7 @@ export function Chat({
             />
           ))}
 
-          {isLoading &&
+          {(isLoading || isProcessing) &&
             messages.length > 0 &&
             messages[messages.length - 1].role === 'user' && (
               <ThinkingMessage />
@@ -215,8 +285,8 @@ export function Chat({
             input={input}
             setInput={setInput}
             handleSubmit={handleSubmit}
-            isLoading={isLoading}
-            stop={stop}
+            isLoading={isLoading || isProcessing}
+            stop={handleStop}
             attachments={attachments}
             setAttachments={setAttachments}
             messages={messages}
@@ -233,8 +303,8 @@ export function Chat({
             input={input}
             setInput={setInput}
             handleSubmit={handleSubmit}
-            isLoading={isLoading}
-            stop={stop}
+            isLoading={isLoading || isProcessing}
+            stop={handleStop}
             attachments={attachments}
             setAttachments={setAttachments}
             append={append}
