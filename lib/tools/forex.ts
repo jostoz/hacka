@@ -123,9 +123,23 @@ async function getFxDataFromAPI(pair: string, timeframe: string, periods: number
     return fxData.slice(-periods);
 
   } catch (error) {
+    // ADD: Log detailed error information
+    console.error('Error details during getFxDataFromAPI:', { 
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      // ADD: Log the cause if available (useful for fetch errors)
+      cause: error instanceof Error ? error.cause : undefined,
+      // ADD: Log the stack trace
+      stack: error instanceof Error ? error.stack : undefined,
+      // ADD: Log additional context 
+      context: { pair, timeframe, periods }
+    });
+
     if (error instanceof Error) {
-      throw new Error(`Error fetching FX data: ${error.message}`);
-    }
+      // Modify the re-thrown error to include more context potentially
+      throw new Error(`Error fetching FX data for ${pair} (${timeframe}): ${error.message}`, { cause: error });
+    } 
+    // Keep the generic throw for truly unknown errors
     throw new Error('Unknown error fetching FX data');
   }
 }
@@ -368,9 +382,6 @@ export const forexTools = {
       periods: z.number().describe('Number of periods to fetch')
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<FxData[]>> => {
-      if (!validateForexParams(args)) {
-        throw new Error('Invalid parameters for get_fx_data');
-      }
       const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
       const data = await getFxDataFromAPI(pair, timeframe, periods);
       return {
@@ -389,9 +400,6 @@ export const forexTools = {
       risk_percent: z.number().describe('Risk percentage per trade')
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<Signal>> => {
-      if (!validateForexParams(args)) {
-        throw new Error('Invalid parameters for calculate_quant_signal');
-      }
       const { data, capital, risk_percent } = args as { data: FxData[]; capital: number; risk_percent: number };
       const response = calculateSignal(data, 'EUR/USD', capital, risk_percent);
       return {
@@ -416,9 +424,6 @@ export const forexTools = {
       data: z.array(fxDataSchema).describe('Historical price data')
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<Forecast>> => {
-      if (!validateForexParams(args)) {
-        throw new Error('Invalid parameters for get_simple_forecast');
-      }
       const { data } = args as { data: FxData[] };
       const forecast = generateForecast(data);
       return {
@@ -438,16 +443,6 @@ export const forexTools = {
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
       try {
-      if (!validateForexParams(args)) {
-          return {
-            success: false,
-            error: {
-              message: 'Parámetros inválidos para análisis técnico',
-              code: 'INVALID_PARAMETERS'
-            }
-          };
-      }
-
       const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
         
         // Validar el par de divisas
@@ -505,30 +500,6 @@ export const forexTools = {
 } satisfies Record<string, BaseTool>;
 
 export type ForexTools = typeof forexTools;
-
-// Función de validación de parámetros
-const validateForexParams = (params: Record<string, unknown>): boolean => {
-  if (!params || typeof params !== 'object') return false;
-
-  return Object.entries(params).every(([key, value]) => {
-    switch (key) {
-      case 'pair':
-        return typeof value === 'string' && isValidForexPair(value);
-      case 'timeframe':
-        return typeof value === 'string' && isValidTimeframe(value);
-      case 'periods':
-        return typeof value === 'number' && value > 0;
-      case 'capital':
-        return typeof value === 'number' && value > 0;
-      case 'risk_percent':
-        return typeof value === 'number' && value > 0 && value <= 100;
-      case 'data':
-        return Array.isArray(value) && value.every(item => fxDataSchema.safeParse(item).success);
-      default:
-        return false;
-    }
-  });
-};
 
 export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | 'D' | 'W';
 

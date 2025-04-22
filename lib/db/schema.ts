@@ -9,6 +9,7 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
@@ -26,6 +27,10 @@ export const chat = pgTable('Chat', {
   userId: uuid('userId')
     .notNull()
     .references(() => user.id),
+}, (table) => {
+  return {
+    userIdIdx: index('userId_idx').on(table.userId),
+  };
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -56,6 +61,8 @@ export const vote = pgTable(
   (table) => {
     return {
       pk: primaryKey({ columns: [table.chatId, table.messageId] }),
+      chatIdIdx: index('chatId_idx').on(table.chatId),
+      messageIdIdx: index('messageId_idx').on(table.messageId),
     };
   },
 );
