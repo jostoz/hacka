@@ -100,14 +100,14 @@ export function Block({
     block && block.status !== 'streaming'
       ? `/api/document?id=${block.documentId}`
       : null,
-    fetcher,
+    async (url: string) => fetcher<Array<Document>>(url),
   );
 
   const { data: suggestions } = useSWR<Array<Suggestion>>(
     documents && block && block.status !== 'streaming'
       ? `/api/suggestions?documentId=${block.documentId}`
       : null,
-    fetcher,
+    async (url: string) => fetcher<Array<Suggestion>>(url),
     {
       dedupingInterval: 5000,
     },
@@ -158,6 +158,10 @@ export function Block({
           if (currentDocument.content !== updatedContent) {
             await fetch(`/api/document?id=${block.documentId}`, {
               method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify({
                 title: block.title,
                 content: updatedContent,

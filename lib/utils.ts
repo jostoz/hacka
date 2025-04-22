@@ -49,22 +49,27 @@ export const handleForexError = (error: unknown) => {
   };
 };
 
-export const fetcher = async (url: string) => {
-  const res = await fetch(url);
+export async function fetcher<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
-  if (!res.ok) {
-    const error = new Error(
-      'An error occurred while fetching the data.',
-    ) as ApplicationError;
-
-    error.info = await res.json();
-    error.status = res.status;
-
+  if (!response.ok) {
+    const error = new Error('An error occurred while fetching the data.');
+    error.message = await response.text();
     throw error;
   }
 
-  return res.json();
-};
+  return response.json();
+}
 
 export function getLocalStorage(key: string) {
   if (typeof window !== 'undefined') {

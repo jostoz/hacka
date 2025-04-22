@@ -51,8 +51,14 @@ export function Chat({
     },
     onError: (error) => {
       console.error('Chat error:', error);
-      setError(error.message || 'Error en la comunicación');
+      if (error.message?.includes('401') || error.message?.includes('No autorizado')) {
+        setError('Sesión expirada. Por favor, vuelve a iniciar sesión.');
+        refreshSession();
+      } else {
+        setError(error.message || 'Error en la comunicación');
+      }
     },
+    credentials: 'include',
   });
 
   const { width: windowWidth = 1920, height: windowHeight = 1080 } =
@@ -74,7 +80,7 @@ export function Chat({
 
   const { data: votes } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
-    fetcher,
+    async (url: string) => fetcher<Array<Vote>>(url, { credentials: 'include' })
   );
 
   const [messagesContainerRef, messagesEndRef] =
