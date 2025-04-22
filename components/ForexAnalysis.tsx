@@ -4,23 +4,23 @@ import { forexTools } from '@/lib/tools/forex';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SignalCard } from './SignalCard';
 import type { Signal, Forecast, TechnicalAnalysisData, FxData, ToolResult } from '@/lib/types/types';
 import { TechnicalAnalysisBlock } from './technical-analysis-block';
 
-interface ForexConfig {
-  pair: string;
+interface ForexAnalysisProps {
+  symbol: string;
   timeframe: string;
   periods: number;
+}
+
+interface ForexConfig {
   capital: number;
   riskPercent: number;
 }
 
-interface MarketData extends ToolResult<FxData[]> {
-  type: 'fx-data';
-}
+interface FxDataResult extends ToolResult<FxData[]> {}
 
 const TIMEFRAME_OPTIONS = [
   { value: '1m', label: '1 minuto' },
@@ -40,31 +40,34 @@ const FOREX_PAIRS = [
   { value: 'USD/CAD', label: 'USD/CAD' }
 ];
 
-export function ForexAnalysis() {
+export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe, periods }) => {
   const [config, setConfig] = useState<ForexConfig>({
-    pair: 'EUR/USD',
-    timeframe: '1h',
-    periods: 100,
     capital: 10000,
     riskPercent: 2
   });
 
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [marketData, setMarketData] = useState<FxDataResult | null>(null);
   const [signal, setSignal] = useState<ToolResult<Signal> | null>(null);
   const [forecast, setForecast] = useState<ToolResult<Forecast> | null>(null);
-  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
 
-  const fetchMarketData = async () => {
+  const fetchMarketData = async (): Promise<FxDataResult> => {
     try {
-      const data = await forexTools.get_fx_data.execute({
-        pair: config.pair,
-        timeframe: config.timeframe,
-        periods: config.periods
+      const result = await forexTools.get_fx_data.execute({
+        pair: symbol,
+        timeframe: timeframe,
+        periods: periods
       });
-      setMarketData(data as MarketData);
-      return data as MarketData;
+      
+      if (!result.success) {
+        throw new Error('Error al obtener datos del mercado');
+      }
+      
+      const typedResult: FxDataResult = result;
+      setMarketData(typedResult);
+      return typedResult;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al obtener datos: ${errorMessage}`);
@@ -72,29 +75,36 @@ export function ForexAnalysis() {
     }
   };
 
-  const generateSignal = async () => {
+  const generateSignal = async (): Promise<void> => {
     setLoading(true);
     try {
       const data = marketData || await fetchMarketData();
+      if (!data.success || !data.data) {
+        throw new Error('No hay datos de mercado disponibles');
+      }
+
       const tradingSignal = await forexTools.calculate_quant_signal.execute({
         data: data.data,
         capital: config.capital,
         risk_percent: config.riskPercent
       });
 
-      if (tradingSignal.success && tradingSignal.data && data.data && data.data.length > 0) {
-        const signalData: Signal = {
-          symbol: config.pair,
-          type: tradingSignal.data.type || 'BUY',
-          price: data.data[data.data.length - 1].close,
-          stopLoss: tradingSignal.data.stopLoss,
-          takeProfit: tradingSignal.data.takeProfit,
-          timestamp: Date.now(),
-          confidence: tradingSignal.data.confidence,
-          reason: tradingSignal.data.reason
-        };
-        setSignal({ success: true, data: signalData });
+      if (!tradingSignal.success || !tradingSignal.data) {
+        throw new Error('Error al calcular la señal de trading');
       }
+
+      const signalData: Signal = {
+        symbol,
+        type: tradingSignal.data.type || 'BUY',
+        price: data.data[data.data.length - 1].close,
+        stopLoss: tradingSignal.data.stopLoss,
+        takeProfit: tradingSignal.data.takeProfit,
+        timestamp: Date.now(),
+        confidence: tradingSignal.data.confidence,
+        reason: tradingSignal.data.reason
+      };
+
+      setSignal({ success: true, data: signalData });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al generar señal: ${errorMessage}`);
@@ -103,14 +113,23 @@ export function ForexAnalysis() {
     }
   };
 
-  const generateForecast = async () => {
+  const generateForecast = async (): Promise<void> => {
     setLoading(true);
     try {
       const data = marketData || await fetchMarketData();
-      const forecastData = await forexTools.get_simple_forecast.execute({
+      if (!data.success || !data.data) {
+        throw new Error('No hay datos de mercado disponibles');
+      }
+
+      const forecastResult = await forexTools.get_simple_forecast.execute({
         data: data.data
       });
-      setForecast(forecastData as ToolResult<Forecast>);
+
+      if (!forecastResult.success) {
+        throw new Error('Error al generar el pronóstico');
+      }
+
+      setForecast(forecastResult);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al generar pronóstico: ${errorMessage}`);
@@ -119,18 +138,24 @@ export function ForexAnalysis() {
     }
   };
 
-  const generateTechnicalAnalysis = async () => {
+  const fetchTechnicalAnalysisData = async (): Promise<void> => {
     setLoading(true);
     try {
-      const analysis = await forexTools.fetchTechnicalAnalysis.execute({
-        pair: config.pair,
-        timeframe: config.timeframe,
-        periods: config.periods
+      const result = await forexTools.fetchTechnicalAnalysis.execute({
+        pair: symbol,
+        timeframe: timeframe,
+        periods: periods
       });
-      setTechnicalAnalysis(analysis as ToolResult<TechnicalAnalysisData>);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+
+      if (!result.success) {
+        throw new Error('Error al obtener el análisis técnico');
+      }
+
+      setTechnicalAnalysis(result);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setError(`Error en análisis técnico: ${errorMessage}`);
+      console.error('Error fetching technical analysis:', error);
     } finally {
       setLoading(false);
     }
@@ -140,46 +165,6 @@ export function ForexAnalysis() {
     <Card className="p-6">
       <form className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="pair">Par de Divisas</Label>
-          <Select
-            value={config.pair}
-            onValueChange={(value) => setConfig({ ...config, pair: value })}
-          >
-            {FOREX_PAIRS.map((pair) => (
-              <option key={pair.value} value={pair.value}>
-                {pair.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="timeframe">Marco Temporal</Label>
-          <Select
-            value={config.timeframe}
-            onValueChange={(value) => setConfig({ ...config, timeframe: value })}
-          >
-            {TIMEFRAME_OPTIONS.map((tf) => (
-              <option key={tf.value} value={tf.value}>
-                {tf.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="periods">Períodos a Analizar</Label>
-          <Input
-            id="periods"
-            type="number"
-            min="10"
-            max="1000"
-            value={config.periods}
-            onChange={(e) => setConfig({ ...config, periods: Number.parseInt(e.target.value) })}
-          />
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="capital">Capital Disponible ($)</Label>
           <Input
             id="capital"
@@ -187,7 +172,7 @@ export function ForexAnalysis() {
             min="100"
             step="100"
             value={config.capital}
-            onChange={(e) => setConfig({ ...config, capital: Number.parseInt(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, capital: Number(e.target.value) })}
           />
         </div>
 
@@ -200,73 +185,67 @@ export function ForexAnalysis() {
             max="10"
             step="0.1"
             value={config.riskPercent}
-            onChange={(e) => setConfig({ ...config, riskPercent: Number.parseFloat(e.target.value) })}
+            onChange={(e) => setConfig({ ...config, riskPercent: Number(e.target.value) })}
           />
         </div>
 
-        <div className="flex gap-2">
-          <Button 
-            type="button" 
+        <div className="flex space-x-4">
+          <Button
+            type="button"
+            onClick={fetchTechnicalAnalysisData}
+            disabled={loading}
+          >
+            {loading ? 'Analizando...' : 'Análisis Técnico'}
+          </Button>
+
+          <Button
+            type="button"
             onClick={generateSignal}
             disabled={loading}
           >
-            Generar Señal
+            {loading ? 'Generando...' : 'Generar Señal'}
           </Button>
-          <Button 
-            type="button" 
+
+          <Button
+            type="button"
             onClick={generateForecast}
             disabled={loading}
-            variant="outline"
           >
-            Pronóstico
-          </Button>
-          <Button 
-            type="button" 
-            onClick={generateTechnicalAnalysis}
-            disabled={loading}
-            variant="outline"
-          >
-            Análisis Técnico
+            {loading ? 'Calculando...' : 'Generar Pronóstico'}
           </Button>
         </div>
       </form>
 
-      {loading && (
-        <div className="mt-4 text-center">
-          Analizando mercado...
-        </div>
-      )}
-
       {error && (
-        <div className="mt-4 text-red-500">
+        <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-md">
           {error}
         </div>
       )}
-      
+
+      {technicalAnalysis?.data && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Análisis Técnico</h3>
+          <TechnicalAnalysisBlock data={technicalAnalysis.data} />
+        </div>
+      )}
+
       {signal?.data && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Señal de Trading</h3>
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Señal de Trading</h3>
           <SignalCard signal={signal.data} />
         </div>
       )}
 
       {forecast?.data && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Pronóstico</h3>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-700">Próximo precio: {forecast.data.nextPrice}</p>
-            <p className="text-xs text-gray-500 mt-2">Confianza: {forecast.data.confidence}%</p>
-            <p className="text-xs text-gray-500">Timestamp: {forecast.data.timestamp}</p>
-          </div>
-        </div>
-      )}
-
-      {technicalAnalysis?.data && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Análisis Técnico</h3>
-          <TechnicalAnalysisBlock data={technicalAnalysis.data} />
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Pronóstico</h3>
+          <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+            {JSON.stringify(forecast.data, null, 2)}
+          </pre>
         </div>
       )}
     </Card>
   );
-}
+};
+
+export default ForexAnalysis;

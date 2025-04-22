@@ -1,12 +1,37 @@
 import { compare } from 'bcrypt-ts';
-import NextAuth, { type DefaultSession, } from 'next-auth';
+import NextAuth, { 
+  type DefaultSession, 
+  type User as NextAuthUser
+} from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { z } from 'zod';
+import { db } from '../../lib/db';
+import { user } from '../../lib/db/schema';
+import { eq } from 'drizzle-orm';
 
-import { getUser } from '@/lib/db/queries';
-import { authConfig } from './auth.config';
+declare module 'next-auth' {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+    } & DefaultSession['user'];
+  }
 
-// Custom error types for authentication
+  // Instead of extending NextAuthUser directly, we define additional properties
+  interface User {
+    id?: string;
+    email?: string | null;
+    name?: string | null;
+  }
+}
+
+interface DbUser {
+  id: string;
+  email: string;
+  password: string | null;
+  name: string | null;
+}
+
 class AuthenticationError extends Error {
   constructor(message: string) {
     super(message);
@@ -14,45 +39,9 @@ class AuthenticationError extends Error {
   }
 }
 
-class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
-// Type definitions
-interface AuthUser {
-  id: string;
-  email: string;
-  password?: string;
-}
-
-// Extend the built-in session type
-declare module 'next-auth' {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-    } & DefaultSession['user'];
-  }
-}
-
-// Type guard for AuthUser
-function isAuthUser(user: unknown): user is AuthUser {
-  return (
-    typeof user === 'object' &&
-    user !== null &&
-    'id' in user &&
-    'email' in user &&
-    typeof (user as AuthUser).id === 'string' &&
-    typeof (user as AuthUser).email === 'string'
-  );
-}
-
-// Validation schema for credentials
 const credentialsSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email(),
+  password: z.string().min(8),
 });
 
 type Credentials = z.infer<typeof credentialsSchema>;
@@ -61,83 +50,64 @@ export const {
   handlers: { GET, POST },
   auth,
   signIn,
-  signOut,
 } = NextAuth({
-  ...authConfig,
   providers: [
     CredentialsProvider({
       id: 'credentials',
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials): Promise<AuthUser | null> {
+      async authorize(credentials): Promise<NextAuthUser | null> {
+        if (!credentials?.email || !credentials?.password) {
+          throw new AuthenticationError('Missing credentials');
+        }
+
         try {
-          // Validate credentials format
           const validatedCredentials = credentialsSchema.parse(credentials);
-          
-          // Get user from database
-          const users = await getUser(validatedCredentials.email);
-          if (users.length === 0) {
+
+          const foundUser = await db.query.user.findFirst({
+            where: eq(user.email, validatedCredentials.email),
+          }) as DbUser | undefined;
+
+          if (!foundUser || !foundUser.password) {
             throw new AuthenticationError('Invalid credentials');
           }
 
-          const user = users[0];
-          if (!user.password) {
-            throw new AuthenticationError('User has no password set');
-          }
-
-          // Verify password
-          const isValidPassword = await compare(
-            validatedCredentials.password,
-            user.password
-          );
+          const isValidPassword = await compare(validatedCredentials.password, foundUser.password);
 
           if (!isValidPassword) {
             throw new AuthenticationError('Invalid credentials');
           }
 
-          // Validate user data with type guard
-          const authUser: AuthUser = {
-            id: user.id,
-            email: user.email,
+          return {
+            id: foundUser.id,
+            email: foundUser.email,
+            name: foundUser.name,
           };
-
-          if (!isAuthUser(authUser)) {
-            throw new ValidationError('Invalid user data structure');
-          }
-
-          return authUser;
         } catch (error) {
-          if (error instanceof z.ZodError) {
-            throw new ValidationError('Invalid credentials format');
+          if (error instanceof AuthenticationError) {
+            return null;
           }
-          if (error instanceof AuthenticationError || error instanceof ValidationError) {
-            throw error;
-          }
-          console.error('Authentication error:', error);
-          return null;
+          throw error;
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user && isAuthUser(user)) {
+    jwt({ token, user }: { token: JWT, user?: NextAuthUser }) {
+      if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
+    session({ session, token }: { session: DefaultSession, token: JWT }) {
+      if (token && session.user) {
         session.user.id = token.id as string;
       }
       return session;
     },
   },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
 });
+

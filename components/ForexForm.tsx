@@ -114,7 +114,9 @@ export function ForexForm() {
         }
         case 'technical': {
           const technicalAnalysis = await forexTools.fetchTechnicalAnalysis.execute({
-            pair: config.symbol
+            pair: config.symbol,
+            timeframe: config.timeframe,
+            periods: config.periods
           });
           setTechnicalAnalysis(technicalAnalysis.data as TechnicalAnalysisData);
           break;
