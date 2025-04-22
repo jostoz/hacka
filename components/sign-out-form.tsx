@@ -1,4 +1,4 @@
-import { signOut } from '@/auth';
+import { signOut } from 'next-auth/react';
 
 export const SignOutForm = () => {
   return (
@@ -6,7 +6,7 @@ export const SignOutForm = () => {
       className="w-full"
       action={async () => {
         'use server';
-        await signOut();
+        await signOut({ redirectTo: '/' });
       }}
     >
       <button
