@@ -1,7 +1,8 @@
 import { BaseMarketDataService } from './base';
 import type { 
   MarketDataParams, 
-  MarketDataResult 
+  MarketDataResult,
+  TimeInterval
 } from '@/lib/types/market-data';
 
 interface CapitalCandle {
@@ -19,6 +20,17 @@ export class CapitalService extends BaseMarketDataService {
   private readonly API_KEY: string;
   private readonly BASE_URL = 'https://api-capital.backend-capital.com/api/v1';
 
+  private readonly RESOLUTION_MAP: Record<TimeInterval, string> = {
+    '1m': 'M1',
+    '5m': 'M5',
+    '15m': 'M15',
+    '30m': 'M30',
+    '1h': 'H1',
+    '4h': 'H4',
+    'D': 'D1',
+    'W': 'W1'
+  };
+
   constructor(apiKey: string) {
     super();
     this.API_KEY = apiKey;
@@ -31,7 +43,7 @@ export class CapitalService extends BaseMarketDataService {
       const endpoint = `${this.BASE_URL}/financial-charts/${params.symbol}`;
       const queryParams = new URLSearchParams({
         interval: this.mapInterval(params.interval),
-        from: this.calculateStartTimestamp(params.range).toString(),
+        from: this.calculateFromDate(params.interval).toString(),
         to: Date.now().toString(),
       });
 
@@ -86,37 +98,28 @@ export class CapitalService extends BaseMarketDataService {
     }
   }
 
-  private calculateStartTimestamp(range: string): number {
+  private calculateFromDate(interval: TimeInterval): number {
     const now = Date.now();
-    const day = 24 * 60 * 60 * 1000;
-    
-    switch (range) {
-      case '1d': return now - day;
-      case '5d': return now - (5 * day);
-      case '1mo': return now - (30 * day);
-      case '3mo': return now - (90 * day);
-      case '6mo': return now - (180 * day);
-      case '1y': return now - (365 * day);
-      case '2y': return now - (730 * day);
-      case '5y': return now - (1825 * day);
-      case 'max': return 0;
-      default: return now - (30 * day);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+
+    switch (interval) {
+      case '1m': return now - day;
+      case '5m': return now - 5 * day;
+      case '15m': return now - 10 * day;
+      case '30m': return now - 15 * day;
+      case '1h': return now - 30 * day;
+      case '4h': return now - 90 * day;
+      case 'D': return now - day;
+      case 'W': return now - week;
+      default: return now - day;
     }
   }
 
   private mapInterval(interval: string): string {
-    const intervalMap: Record<string, string> = {
-      '1m': 'M1',
-      '5m': 'M5',
-      '15m': 'M15',
-      '30m': 'M30',
-      '1h': 'H1',
-      '4h': 'H4',
-      '1d': 'D1',
-      '1w': 'W1',
-      '1mo': 'MN'
-    };
-    return intervalMap[interval] || 'D1';
+    return this.RESOLUTION_MAP[interval as TimeInterval] || 'D1';
   }
 
   private detectCurrency(symbol: string): string {

@@ -1,6 +1,6 @@
 export const FOREX_CONFIG = {
   PAIRS: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD'],
-  TIMEFRAMES: ['1m', '5m', '15m', '1h', '4h', '1d'],
+  TIMEFRAMES: ['1m', '5m', '15m', '30m', '1h', '4h', 'D', 'W'] as const,
   DEFAULT_PERIODS: 100,
   MAX_PERIODS: 1000,
   RISK_LIMITS: {

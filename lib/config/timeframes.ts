@@ -37,12 +37,12 @@ export const CAPITAL_TIMEFRAMES: Record<CapitalResolution, TimeframeConfig> = {
         minBars: 100,
         description: '4 hours'
     },
-    '1d': {
+    'D': {
         maxRange: 3 * 365 * 24 * 60 * 60 * 1000, // 3 years
         minBars: 100,
         description: '1 day'
     },
-    '1w': {
+    'W': {
         maxRange: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years
         minBars: 50,
         description: '1 week'

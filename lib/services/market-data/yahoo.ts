@@ -14,7 +14,7 @@ import { validateHistoricalDataParams, validateOHLCVData, calculateReturns, calc
 interface YahooQueryOptions {
     period1: Date;
     period2: Date;
-    interval: '1d' | '1mo' | '1wk';
+    interval: 'D' | '1mo' | 'W';
 }
 
 interface YahooHistoricalRow {
@@ -24,6 +24,12 @@ interface YahooHistoricalRow {
     low: number;
     close: number;
     volume?: number;
+}
+
+interface YahooFinanceParams {
+    symbol: string;
+    range: string;
+    interval: '1d' | '1mo' | '1wk';
 }
 
 export class YahooFinanceService extends BaseMarketDataService implements MarketDataProvider {
@@ -37,8 +43,8 @@ export class YahooFinanceService extends BaseMarketDataService implements Market
         '30m': '1d',
         '1h': '1d',
         '4h': '1d',
-        '1d': '1d',
-        '1w': '1wk'
+        'D': '1d',
+        'W': '1wk'
     } as const;
 
     private readonly MAX_BARS = 2000;
