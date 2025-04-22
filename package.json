@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "pnpm install --frozen-lockfile && next build",
+    "build": "pnpm install && next build",
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
