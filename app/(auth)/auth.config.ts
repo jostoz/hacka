@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -22,12 +23,16 @@ export const authConfig: NextAuthConfig = {
       if (isAuthRoute) return true;
       
       // Proteger rutas API (excepto auth)
-      if (isApiRoute) return isLoggedIn;
+      if (isApiRoute) {
+        if (isLoggedIn) return true;
+        // Si no está logueado, devolver 401 en lugar de redirigir
+        return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
+      }
       
       // Permitir rutas públicas
       if (isPublicRoute) return true;
       
-      // Requerir autenticación para todas las demás rutas
+      // Para rutas de página, redirigir si no está logueado
       return isLoggedIn;
     },
   },
