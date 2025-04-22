@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
 
-import { register, type RegisterActionState } from '../actions';
+import { register, type ActionState } from '../actions';
 
 export default function Page() {
   const router = useRouter();
@@ -16,18 +16,22 @@ export default function Page() {
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
 
-  const [state, formAction] = useActionState<RegisterActionState, FormData>(
-    register,
+  const registerWrapper = async (_: ActionState, formData: FormData) => {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    return register(email, password);
+  };
+
+  const [state, formAction] = useActionState<ActionState, FormData>(
+    registerWrapper,
     {
       status: 'idle',
     },
   );
 
   useEffect(() => {
-    if (state.status === 'user_exists') {
-      toast.error('Account already exists');
-    } else if (state.status === 'failed') {
-      toast.error('Failed to create account');
+    if (state.status === 'failed') {
+      toast.error(state.error || 'Failed to create account');
     } else if (state.status === 'invalid_data') {
       toast.error('Failed validating your submission!');
     } else if (state.status === 'success') {
