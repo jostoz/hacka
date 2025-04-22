@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-const FxLogo = ({ size = 96 }: { size?: number }) => {
+import { Card } from '@/components/ui/card';
+
+const FxLogo = ({ size = 299 }: { size?: number }) => {
   return (
     <svg 
       width={size} 
       height={size} 
       viewBox="0 0 300 300" 
       xmlns="http://www.w3.org/2000/svg"
+      className="drop-shadow-lg"
     >
       <rect width="300" height="300" fill="white"/>
       <g fill="none" stroke="#D0D0D0" strokeWidth="0.7">
@@ -31,43 +34,57 @@ export const Overview = () => {
   return (
     <motion.div
       key="overview"
-      className="max-w-3xl mx-auto md:mt-20"
+      className="max-w-4xl mx-auto md:mt-24 px-4"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ delay: 0.5 }}
     >
-      <div className="rounded-xl p-6 flex flex-col gap-8 leading-relaxed text-center max-w-xl">
-        <p className="flex flex-row justify-center">
-          <FxLogo size={64} />
+      <Card className="p-8 flex flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-2">
+          <FxLogo size={72} />
+          <h1 className="text-3xl font-bold text-center">
+            ¡Domina el Mercado de Divisas con{' '}
+            <Link
+              className="font-bold text-primary hover:text-primary/80 transition-colors"
+              href="https://www.fxperto.com"
+              target="_blank"
+            >
+              FXperto
+            </Link>
+            !
+          </h1>
+        </div>
+
+        <p className="text-lg text-center max-w-2xl">
+          Tu{' '}
+          <code className="rounded-md bg-primary/10 px-2 py-1 font-semibold">arma secreta</code>{' '}
+          para{' '}
+          <code className="rounded-md bg-primary/10 px-2 py-1 font-semibold">operaciones ganadoras</code>{' '}
+          en el mercado forex.
         </p>
-        <p>
-          Bienvenido a{' '}
-          <Link
-            className="font-medium underline underline-offset-4"
-            href="https://www.fxperto.com"
-            target="_blank"
-          >
-            FXperto
-          </Link>
-          , tu plataforma de{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">análisis cambiario</code>{' '}
-          que te ayuda a tomar{' '}
-          <code className="rounded-md bg-muted px-1 py-0.5">decisiones informadas</code>{' '}
-          en la compra y venta de divisas.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Datos en tiempo real · Análisis estratégico · Alertas clave
-        </p>
-        <details className="text-left">
-          <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-            Aviso Legal – Exención de Responsabilidad (Haz clic para ver)
+
+        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground font-medium">
+          <span className="flex items-center gap-1">
+            <span className="text-primary">🔥</span> Datos en tiempo real
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="text-primary">💡</span> Análisis estratégico
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="text-primary">⚡</span> Alertas clave
+          </span>
+        </div>
+
+        <details className="w-full max-w-2xl">
+          <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors font-medium flex items-center gap-2">
+            <span className="text-primary">⚖️</span> Aviso Legal – Exención de Responsabilidad
           </summary>
-          <div className="mt-2 p-4 text-xs text-muted-foreground bg-muted/50 rounded-lg max-h-48 overflow-y-auto">
+          <div className="mt-4 p-6 text-sm text-muted-foreground bg-muted/50 rounded-lg max-h-64 overflow-y-auto leading-relaxed">
             La información, datos y estadísticas proporcionados en esta aplicación, incluyendo aquellos relacionados con los tipos de cambio entre MXN y USD, se ofrecen únicamente con fines informativos y estadísticos. Esta aplicación no constituye ni pretende constituir una recomendación, asesoramiento financiero, de inversión o especulación, y no debe utilizarse como base para tomar decisiones financieras. El usuario es únicamente responsable del análisis y las decisiones que derive del uso de la información aquí contenida, asumiendo todos los riesgos inherentes a cualquier operación o inversión que realice. Se recomienda encarecidamente que, para cualquier decisión financiera o de inversión, el usuario consulte a asesores financieros calificados y verifique la información con las autoridades regulatorias correspondientes. Esta aplicación y su contenido se rigen por las normativas y regulaciones vigentes de organismos como la AMIB (Asociación Mexicana de Instituciones Bursátiles), la CNBV (Comisión Nacional Bancaria y de Valores), y cualquier otra entidad regulatoria aplicable. Ni los desarrolladores, ni los proveedores de datos, ni los asociados de esta aplicación serán responsables de las decisiones o acciones que el usuario pueda tomar basándose en esta información. El uso de esta aplicación implica la aceptación total de los términos aquí expuestos.
           </div>
         </details>
-      </div>
+      </Card>
     </motion.div>
   );
 };

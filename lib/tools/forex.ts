@@ -438,7 +438,7 @@ export const forexTools = {
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
       try {
-        if (!validateForexParams(args)) {
+      if (!validateForexParams(args)) {
           return {
             success: false,
             error: {
@@ -446,9 +446,9 @@ export const forexTools = {
               code: 'INVALID_PARAMETERS'
             }
           };
-        }
+      }
 
-        const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
+      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
         
         // Validar el par de divisas
         if (!isValidForexPair(pair)) {
@@ -473,7 +473,7 @@ export const forexTools = {
         }
 
         // Obtener análisis técnico
-        const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
+      const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
         
         if (!analysis) {
           return {
@@ -485,10 +485,10 @@ export const forexTools = {
           };
         }
 
-        return {
+      return {
           success: true,
-          data: analysis
-        };
+        data: analysis
+      };
       } catch (error) {
         console.error('Error en fetchTechnicalAnalysis:', error);
         return {
