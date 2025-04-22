@@ -1,18 +1,27 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-
 const FxLogo = ({ size = 32 }: { size?: number }) => {
   return (
     <svg 
       width={size} 
-      height={(size * 200) / 300} 
-      viewBox="0 0 300 200" 
+      height={size} 
+      viewBox="0 0 300 300" 
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect width="300" height="200" fill="transparent"/>
-      <g fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-        <path d="M 100,70 L 150,70 M 100,70 L 100,150 M 100,110 L 140,110" />
-        <path d="M 180,70 L 230,150 M 180,150 L 230,70" />
+      <rect width="300" height="300" fill="white"/>
+      <g fill="none" stroke="#D0D0D0" strokeWidth="0.7">
+        <path d="M 150,150 A 34,34 0 0 1 184,184 A 55,55 0 0 1 129,239 A 89,89 0 0 1 40,150 A 144,144 0 0 1 184,6"/>
+        <rect x="95" y="95" width="144" height="89"/> 
+        <rect x="95" y="95" width="89" height="55"/> 
+        <rect x="150" y="95" width="34" height="55"/>
+      </g>
+      <circle cx="150" cy="150" r="89" fill="none" stroke="#757575" strokeWidth="1.6"/>
+      <g fill="none" stroke="currentColor" strokeWidth="2.0" strokeLinecap="round">
+        <path d="M 116,95 L 116,205"/> 
+        <path d="M 116,95 L 171,95"/> 
+        <path d="M 116,150 L 150,150"/>
+        <path d="M 171,95 L 205,205"/> 
+        <path d="M 171,205 L 205,95"/>
       </g>
     </svg>
   );
