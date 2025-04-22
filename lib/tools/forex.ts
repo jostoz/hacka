@@ -49,6 +49,26 @@ export const fxDataSchema = z.object({
   volume: z.number()
 });
 
+// Función para convertir timeframe al formato de Capital.com
+function convertTimeframe(timeframe: string): string {
+  const timeframeMap: Record<string, string> = {
+    '1m': 'MINUTE_1',
+    '5m': 'MINUTE_5',
+    '15m': 'MINUTE_15',
+    '30m': 'MINUTE_30',
+    '1h': 'HOUR_1',
+    '4h': 'HOUR_4',
+    'D': 'DAY_1',
+    'W': 'WEEK_1'
+  };
+  
+  const capitalTimeframe = timeframeMap[timeframe];
+  if (!capitalTimeframe) {
+    throw new Error(`Unsupported timeframe: ${timeframe}`);
+  }
+  return capitalTimeframe;
+}
+
 // Funciones de API
 export async function getFxDataFromAPI(pair: string, timeframe: string, periods: number): Promise<FxData[]> {
   try {
@@ -60,7 +80,7 @@ export async function getFxDataFromAPI(pair: string, timeframe: string, periods:
     // Configurar e inicializar el servicio de datos de mercado
     const config: MarketDataConfig = {
       apiKey: process.env.CAPITAL_API_KEY || '',
-      baseUrl: process.env.CAPITAL_API_URL || 'https://api.capital.com'
+      baseUrl: process.env.CAPITAL_API_URL || 'https://api-capital.backend-capital.com'
     };
     
     const marketDataService = new MarketDataFactory(config);
@@ -69,21 +89,7 @@ export async function getFxDataFromAPI(pair: string, timeframe: string, periods:
     const formattedPair = pair.replace('/', '_');
 
     // Convertir timeframe al formato esperado por Capital.com
-    const timeframeMap: Record<string, string> = {
-      '1m': 'MINUTE_1',
-      '5m': 'MINUTE_5',
-      '15m': 'MINUTE_15',
-      '30m': 'MINUTE_30',
-      '1h': 'HOUR_1',
-      '4h': 'HOUR_4',
-      'D': 'DAY_1',
-      'W': 'WEEK_1'
-    };
-    
-    const capitalTimeframe = timeframeMap[timeframe];
-    if (!capitalTimeframe) {
-      throw new Error(`Unsupported timeframe: ${timeframe}`);
-    }
+    const capitalTimeframe = convertTimeframe(timeframe);
 
     // Calcular el rango de fechas basado en los períodos solicitados
     const endDate = new Date();
@@ -107,20 +113,7 @@ export async function getFxDataFromAPI(pair: string, timeframe: string, periods:
     };
 
     // Obtener los datos históricos
-    const historicalData = await marketDataService.getHistoricalData(params);
-
-    // Transformar los datos al formato FxData[]
-    const fxData: FxData[] = historicalData.map((candle) => ({
-      timestamp: candle.timestamp,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
-      volume: candle.volume
-    }));
-
-    // Limitar los datos al número de períodos solicitados
-    return fxData.slice(-periods);
+    return await marketDataService.getHistoricalData(params);
 
   } catch (error) {
     // ADD: Log detailed error information
