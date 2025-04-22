@@ -1,109 +1,41 @@
 import { compare } from 'bcrypt-ts';
-import NextAuth, { 
-  type DefaultSession, 
-  type User as NextAuthUser
-} from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { z } from 'zod';
-import { db } from '../../lib/db';
-import { user } from '../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import NextAuth, { type User, type Session } from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import { getUser } from '@/lib/db/queries';
+import { authConfig } from './auth.config';
 
-declare module 'next-auth' {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-    } & DefaultSession['user'];
-  }
-
-  // Instead of extending NextAuthUser directly, we define additional properties
-  interface User {
-    id?: string;
-    email?: string | null;
-    name?: string | null;
-  }
+interface ExtendedSession extends Session {
+  user: User;
 }
-
-interface DbUser {
-  id: string;
-  email: string;
-  password: string | null;
-  name: string | null;
-}
-
-class AuthenticationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AuthenticationError';
-  }
-}
-
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-type Credentials = z.infer<typeof credentialsSchema>;
 
 export const {
   handlers: { GET, POST },
   auth,
   signIn,
+  signOut,
 } = NextAuth({
+  ...authConfig,
   providers: [
-    CredentialsProvider({
-      id: 'credentials',
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials): Promise<NextAuthUser | null> {
-        if (!credentials?.email || !credentials?.password) {
-          throw new AuthenticationError('Missing credentials');
-        }
-
-        try {
-          const validatedCredentials = credentialsSchema.parse(credentials);
-
-          const foundUser = await db.query.user.findFirst({
-            where: eq(user.email, validatedCredentials.email),
-          }) as DbUser | undefined;
-
-          if (!foundUser || !foundUser.password) {
-            throw new AuthenticationError('Invalid credentials');
-          }
-
-          const isValidPassword = await compare(validatedCredentials.password, foundUser.password);
-
-          if (!isValidPassword) {
-            throw new AuthenticationError('Invalid credentials');
-          }
-
-          return {
-            id: foundUser.id,
-            email: foundUser.email,
-            name: foundUser.name,
-          };
-        } catch (error) {
-          if (error instanceof AuthenticationError) {
-            return null;
-          }
-          throw error;
-        }
+    Credentials({
+      credentials: {},
+      async authorize({ email, password }: any) {
+        const users = await getUser(email);
+        if (users.length === 0) return null;
+        const passwordsMatch = await compare(password, users[0].password!);
+        if (!passwordsMatch) return null;
+        return users[0] as any;
       },
     }),
   ],
   callbacks: {
-    jwt({ token, user }: { token: JWT, user?: NextAuthUser }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    session({ session, token }: { session: DefaultSession, token: JWT }) {
-      if (token && session.user) {
+    async session({ session, token }) {
+      if (session.user) {
         session.user.id = token.id as string;
       }
       return session;

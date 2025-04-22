@@ -1,84 +1,64 @@
 'use server';
 
 import { z } from 'zod';
-
+import { hash } from 'bcrypt-ts';
 import { createUser, getUser } from '@/lib/db/queries';
-
 import { signIn } from './auth';
 
-const authFormSchema = z.object({
+const userSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(1),
 });
 
-export interface LoginActionState {
-  status: 'idle' | 'in_progress' | 'success' | 'failed' | 'invalid_data';
-}
+export type ActionState = {
+  error?: string;
+  success?: boolean;
+};
 
-export const login = async (
-  _: LoginActionState,
-  formData: FormData,
-): Promise<LoginActionState> => {
+export async function login(email: string, password: string): Promise<ActionState> {
   try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get('email'),
-      password: formData.get('password'),
-    });
-
-    await signIn('credentials', {
-      email: validatedData.email,
-      password: validatedData.password,
+    const result = await signIn('credentials', {
+      email,
+      password,
       redirect: false,
     });
 
-    return { status: 'success' };
+    return {
+      success: !result?.error,
+      error: result?.error,
+    };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { status: 'invalid_data' };
-    }
-
-    return { status: 'failed' };
+    return {
+      error: 'Error al iniciar sesión',
+    };
   }
-};
-
-export interface RegisterActionState {
-  status:
-    | 'idle'
-    | 'in_progress'
-    | 'success'
-    | 'failed'
-    | 'user_exists'
-    | 'invalid_data';
 }
 
-export const register = async (
-  _: RegisterActionState,
-  formData: FormData,
-): Promise<RegisterActionState> => {
+export async function register(email: string, password: string): Promise<ActionState> {
   try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get('email'),
-      password: formData.get('password'),
-    });
-
-    const [user] = await getUser(validatedData.email);
-
-    if (user) {
-      return { status: 'user_exists' } as RegisterActionState;
+    const validation = userSchema.safeParse({ email, password });
+    if (!validation.success) {
+      return {
+        error: 'Datos de usuario inválidos',
+      };
     }
-    await createUser(validatedData.email, validatedData.password);
-    await signIn('credentials', {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
-    });
 
-    return { status: 'success' };
+    const existingUsers = await getUser(email);
+    if (existingUsers.length > 0) {
+      return {
+        error: 'El usuario ya existe',
+      };
+    }
+
+    const hashedPassword = await hash(password, 10);
+    await createUser(email, hashedPassword);
+
+    return {
+      success: true,
+    };
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { status: 'invalid_data' };
-    }
-
-    return { status: 'failed' };
+    return {
+      error: 'Error al registrar usuario',
+    };
   }
-};
+}
