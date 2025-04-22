@@ -6,6 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
+import { toast } from 'sonner';
 
 import { ChatHeader } from '@/components/chat-header';
 import { PreviewMessage, ThinkingMessage } from '@/components/message';
@@ -18,6 +19,12 @@ import { Block, type UIBlock } from './block';
 import { BlockStreamHandler } from './block-stream-handler';
 import { MultimodalInput } from './multimodal-input';
 import { Overview } from './overview';
+
+interface ChatError extends Error {
+  code?: string;
+  details?: string;
+  status?: number;
+}
 
 export function Chat({
   id,
@@ -49,14 +56,36 @@ export function Chat({
     onFinish: () => {
       mutate('/api/history');
     },
-    onError: (error) => {
+    onError: async (error: ChatError) => {
       console.error('Chat error:', error);
-      if (error.message?.includes('401') || error.message?.includes('No autorizado')) {
+      
+      // Manejar errores de autenticación
+      if (error.status === 401 || error.message?.includes('401') || error.message?.includes('No autorizado')) {
         setError('Sesión expirada. Por favor, vuelve a iniciar sesión.');
-        refreshSession();
-      } else {
-        setError(error.message || 'Error en la comunicación');
+        const sessionRefreshed = await refreshSession();
+        if (!sessionRefreshed) {
+          toast.error('No se pudo restaurar la sesión. Por favor, vuelve a iniciar sesión.');
+        }
+        return;
       }
+
+      // Manejar errores de red
+      if (!navigator.onLine) {
+        setError('Error de conexión. Por favor, verifica tu conexión a internet.');
+        return;
+      }
+
+      // Manejar errores específicos de la aplicación
+      if (error.code) {
+        setError(`Error: ${error.message || 'Error desconocido'} (${error.code})`);
+        if (error.details) {
+          console.error('Detalles del error:', error.details);
+        }
+        return;
+      }
+
+      // Error genérico
+      setError(error.message || 'Error en la comunicación con el servidor');
     },
     credentials: 'include',
   });
@@ -94,16 +123,23 @@ export function Chat({
     setIsRetrying(true);
     setError(null);
     try {
+      if (!navigator.onLine) {
+        throw new Error('Sin conexión a internet');
+      }
+
       if (!isSessionValid) {
         const sessionRefreshed = await refreshSession();
         if (!sessionRefreshed) {
           throw new Error('No se pudo restaurar la sesión');
         }
       }
+      
       await mutate('/api/chat');
+      toast.success('Conexión restaurada');
     } catch (err) {
       console.error('Retry error:', err);
-      setError('Error al reintentar la operación');
+      setError(err instanceof Error ? err.message : 'Error al reintentar la operación');
+      toast.error('No se pudo restablecer la conexión');
     } finally {
       setIsRetrying(false);
     }
