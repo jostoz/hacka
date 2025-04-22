@@ -10,6 +10,12 @@ import { SignalCard } from './SignalCard';
 import type { Signal, Forecast, TechnicalAnalysisData, FxData, ToolResult } from '@/lib/types/types';
 import { TechnicalAnalysisBlock } from './technical-analysis-block';
 import type { ForexPair, Timeframe } from '@/lib/forex/constants';
+import { 
+  validateForexPair, 
+  validateTimeframe, 
+  validateForexConfig,
+  ValidationError 
+} from '@/lib/utils/validations';
 
 interface ForexAnalysisProps {
   symbol: ForexPair;
@@ -38,9 +44,11 @@ const TIMEFRAME_OPTIONS: TimeframeOption[] = [
   { value: '1m', label: '1 minuto' },
   { value: '5m', label: '5 minutos' },
   { value: '15m', label: '15 minutos' },
+  { value: '30m', label: '30 minutos' },
   { value: '1h', label: '1 hora' },
   { value: '4h', label: '4 horas' },
-  { value: '1d', label: '1 día' }
+  { value: 'D', label: '1 día' },
+  { value: 'W', label: '1 semana' }
 ];
 
 const FOREX_PAIRS: ForexPairOption[] = [
@@ -66,16 +74,77 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
   const [error, setError] = useState<string | null>(null);
   const [technicalAnalysis, setTechnicalAnalysis] = useState<ToolResult<TechnicalAnalysisData> | null>(null);
 
+  const validateInputs = (): boolean => {
+    try {
+      // Validar par de divisas
+      validateForexPair(symbol);
+      
+      // Validar timeframe
+      validateTimeframe(timeframe);
+      
+      // Validar configuración
+      validateForexConfig({
+        capital: config.capital,
+        riskPercent: config.riskPercent
+      });
+      
+      // Validar períodos
+      if (periods <= 0 || periods > 1000) {
+        throw new ValidationError(
+          'INVALID_PERIODS',
+          'El número de períodos debe estar entre 1 y 1000'
+        );
+      }
+      
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setError(`Error de validación: ${error.message}`);
+      } else {
+        setError('Error de validación desconocido');
+      }
+      return false;
+    }
+  };
+
   const handleCapitalChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setConfig(prev => ({ ...prev, capital: Number(e.target.value) }));
+    const value = Number(e.target.value);
+    try {
+      validateForexConfig({
+        capital: value,
+        riskPercent: config.riskPercent
+      });
+      setConfig(prev => ({ ...prev, capital: value }));
+      setError(null);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setError(error.message);
+      }
+    }
   };
 
   const handleRiskPercentChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setConfig(prev => ({ ...prev, riskPercent: Number(e.target.value) }));
+    const value = Number(e.target.value);
+    try {
+      validateForexConfig({
+        capital: config.capital,
+        riskPercent: value
+      });
+      setConfig(prev => ({ ...prev, riskPercent: value }));
+      setError(null);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setError(error.message);
+      }
+    }
   };
 
   const fetchMarketData = async (): Promise<FxDataResult> => {
     try {
+      if (!validateInputs()) {
+        throw new Error('Validación fallida');
+      }
+
       const result = await forexTools.get_fx_data.execute({
         pair: symbol,
         timeframe: timeframe,
@@ -99,6 +168,10 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
   const generateSignal = async (): Promise<void> => {
     setLoading(true);
     try {
+      if (!validateInputs()) {
+        return;
+      }
+
       const data = marketData || await fetchMarketData();
       if (!data.success || !data.data) {
         throw new Error('No hay datos de mercado disponibles');
@@ -126,6 +199,7 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
       };
 
       setSignal({ success: true, data: signalData });
+      setError(null);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al generar señal: ${errorMessage}`);
