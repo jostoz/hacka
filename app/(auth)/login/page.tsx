@@ -8,16 +8,15 @@ import { toast } from 'sonner';
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
 
-import { login, type LoginActionState } from '../actions';
+import { login, type ActionState } from '../actions';
 
 export default function Page() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
-
-  const [state, formAction] = useActionState<LoginActionState, FormData>(
-    login,
+  const [state, formAction] = useActionState<ActionState, FormData>(
+    (state, formData) => login(formData),
     {
       status: 'idle',
     },
