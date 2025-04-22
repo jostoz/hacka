@@ -81,7 +81,20 @@ export function ForexAnalysis() {
         capital: config.capital,
         risk_percent: config.riskPercent
       });
-      setSignal(tradingSignal as ToolResult<Signal>);
+
+      if (tradingSignal.success && tradingSignal.data && data.data && data.data.length > 0) {
+        const signalData: Signal = {
+          symbol: config.pair,
+          type: tradingSignal.data.type || 'BUY',
+          price: data.data[data.data.length - 1].close,
+          stopLoss: tradingSignal.data.stopLoss,
+          takeProfit: tradingSignal.data.takeProfit,
+          timestamp: Date.now(),
+          confidence: tradingSignal.data.confidence,
+          reason: tradingSignal.data.reason
+        };
+        setSignal({ success: true, data: signalData });
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al generar señal: ${errorMessage}`);
