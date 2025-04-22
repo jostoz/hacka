@@ -37,7 +37,8 @@ const FOREX_PAIRS = [
   { value: 'USD/JPY', label: 'USD/JPY' },
   { value: 'USD/CHF', label: 'USD/CHF' },
   { value: 'AUD/USD', label: 'AUD/USD' },
-  { value: 'USD/CAD', label: 'USD/CAD' }
+  { value: 'USD/CAD', label: 'USD/CAD' },
+  { value: 'USD/MXN', label: 'USD/MXN' }
 ];
 
 export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe, periods }) => {
@@ -140,6 +141,8 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
 
   const fetchTechnicalAnalysisData = async (): Promise<void> => {
     setLoading(true);
+    setError(null);
+    
     try {
       const result = await forexTools.fetchTechnicalAnalysis.execute({
         pair: symbol,
@@ -148,14 +151,23 @@ export const ForexAnalysis: React.FC<ForexAnalysisProps> = ({ symbol, timeframe,
       });
 
       if (!result.success) {
-        throw new Error('Error al obtener el análisis técnico');
+        const errorMessage = result.error?.message || 'Error desconocido en el análisis técnico';
+        const errorCode = result.error?.code || 'UNKNOWN_ERROR';
+        
+        console.error('Error en análisis técnico:', {
+          message: errorMessage,
+          code: errorCode,
+          details: result.error?.details
+        });
+        
+        throw new Error(`${errorMessage} (${errorCode})`);
       }
 
       setTechnicalAnalysis(result);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setError(`Error en análisis técnico: ${errorMessage}`);
-      console.error('Error fetching technical analysis:', error);
+      console.error('Error detallado:', error);
     } finally {
       setLoading(false);
     }

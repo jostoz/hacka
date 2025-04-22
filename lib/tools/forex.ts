@@ -437,15 +437,69 @@ export const forexTools = {
       periods: z.number().describe('Number of periods to fetch')
     }),
     execute: async (args: Record<string, unknown>): Promise<ToolResult<TechnicalAnalysisData>> => {
-      if (!validateForexParams(args)) {
-        throw new Error('Invalid parameters for fetchTechnicalAnalysis');
+      try {
+        if (!validateForexParams(args)) {
+          return {
+            success: false,
+            error: {
+              message: 'Parámetros inválidos para análisis técnico',
+              code: 'INVALID_PARAMETERS'
+            }
+          };
+        }
+
+        const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
+        
+        // Validar el par de divisas
+        if (!isValidForexPair(pair)) {
+          return {
+            success: false,
+            error: {
+              message: `Par de divisas no soportado: ${pair}`,
+              code: 'UNSUPPORTED_PAIR'
+            }
+          };
+        }
+
+        // Validar el timeframe
+        if (!isValidTimeframe(timeframe)) {
+          return {
+            success: false,
+            error: {
+              message: `Timeframe no válido: ${timeframe}`,
+              code: 'INVALID_TIMEFRAME'
+            }
+          };
+        }
+
+        // Obtener análisis técnico
+        const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
+        
+        if (!analysis) {
+          return {
+            success: false,
+            error: {
+              message: 'No se pudo obtener el análisis técnico',
+              code: 'ANALYSIS_FAILED'
+            }
+          };
+        }
+
+        return {
+          success: true,
+          data: analysis
+        };
+      } catch (error) {
+        console.error('Error en fetchTechnicalAnalysis:', error);
+        return {
+          success: false,
+          error: {
+            message: error instanceof Error ? error.message : 'Error desconocido en análisis técnico',
+            code: 'TECHNICAL_ANALYSIS_ERROR',
+            details: error
+          }
+        };
       }
-      const { pair, timeframe, periods } = args as { pair: string; timeframe: string; periods: number };
-      const analysis = await fetchTechnicalAnalysisFromAPI(pair, timeframe, periods);
-      return {
-        success: !!analysis,
-        data: analysis
-      };
     }
   }
 } satisfies Record<string, BaseTool>;
