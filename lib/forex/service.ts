@@ -1,4 +1,4 @@
-import type { FxData, Signal, Forecast, TechnicalAnalysisData, ForexConfig, ForexResponse, ForexError } from './types';
+import type { FxData, Signal, Forecast, TechnicalAnalysisData, ForexResponse, ForexError } from './types';
 import { isValidForexPair, isValidTimeframe } from './constants';
 
 // Mock API endpoint - replace with actual API in production
@@ -61,7 +61,7 @@ export async function calculateSignal(data: FxData[], symbol: string): Promise<S
   };
 }
 
-export async function generateForecast(data: FxData[]): Promise<ForexResponse<Forecast>> {
+export async function generateForecast(data: FxData[], symbol?: string): Promise<ForexResponse<Forecast>> {
   if (data.length < 2) {
     return {
       success: false,
@@ -78,7 +78,7 @@ export async function generateForecast(data: FxData[]): Promise<ForexResponse<Fo
   const prevPrice = data[data.length - 2].close;
   
   const forecast: Forecast = {
-    symbol: 'EUR/USD', // Default pair, should be passed as parameter
+    symbol: symbol || 'EUR/USD', // Use provided symbol or default
     nextPrice: lastPrice * (1 + (Math.random() - 0.5) * 0.01),
     confidence: 0.75,
     timestamp: new Date().toISOString()
@@ -87,53 +87,98 @@ export async function generateForecast(data: FxData[]): Promise<ForexResponse<Fo
   return { success: true, data: forecast };
 }
 
-export async function analyzeTechnicals(data: FxData[]): Promise<ForexResponse<TechnicalAnalysisData>> {
-  if (data.length < 14) {
-    return {
-      success: false,
-      error: {
-        message: 'Insufficient data for technical analysis',
-        code: 'INSUFFICIENT_DATA'
-      }
-    };
-  }
+export function getTechnicalAnalysis(data: FxData[], symbol = 'EUR/USD'): ForexResponse<TechnicalAnalysisData> {
+  try {
+    if (data.length < 14) {
+      throw new Error('Insufficient data points for technical analysis');
+    }
 
-  // Implement technical analysis calculations here
-  // This is a placeholder implementation
-  const lastPrice = data[data.length - 1].close;
-  const rsiValue = 50 + (Math.random() - 0.5) * 20;
-  const macdValue = (Math.random() - 0.5) * 2;
-  const macdSignal = (Math.random() - 0.5) * 2;
-  const macdHistogram = (Math.random() - 0.5) * 0.5;
-  const smaFast = lastPrice * (1 + (Math.random() - 0.5) * 0.01);
-  const smaSlow = lastPrice * (1 + (Math.random() - 0.5) * 0.01);
+    const prices = data.map(d => d.close);
+    
+    // Calculate RSI
+    const changes = prices.slice(1).map((price, i) => price - prices[i]);
+    const gains = changes.map(c => c > 0 ? c : 0);
+    const losses = changes.map(c => c < 0 ? -c : 0);
+    
+    const avgGain = gains.slice(-14).reduce((a, b) => a + b) / 14;
+    const avgLoss = losses.slice(-14).reduce((a, b) => a + b) / 14;
+    
+    const rs = avgGain / (avgLoss || 1);
+    const rsiValue = 100 - (100 / (1 + rs));
 
-  const analysis: TechnicalAnalysisData = {
-    symbol: 'EUR/USD',
-    timestamp: Date.now(),
-    signals: [{
-      symbol: 'EUR/USD',
-      type: macdHistogram > 0 ? 'BUY' : macdHistogram < 0 ? 'SELL' : 'HOLD',
-      price: lastPrice,
-      entryPrice: lastPrice,
-      confidence: Math.min(Math.abs(rsiValue - 50) / 50, 1),
-      stopLoss: smaSlow * 0.98,
+    // Calculate MACD
+    const ema12 = calculateEMA(prices, 12);
+    const ema26 = calculateEMA(prices, 26);
+    const macdLine = ema12 - ema26;
+    const signalLine = calculateEMA([macdLine], 9);
+    const histogram = macdLine - signalLine;
+
+    // Calculate SMAs
+    const fastSMA = calculateSMA(prices, 10);
+    const slowSMA = calculateSMA(prices, 20);
+
+    // Generate signals based on indicators
+    const signals: Signal[] = [];
+    if (rsiValue < 30) {
+      signals.push({
+        symbol,
+        type: 'TECHNICAL',
+        price: prices[prices.length - 1],
+        stopLoss: prices[prices.length - 1] * 0.99,
+        timestamp: Date.now(),
+        confidence: 0.7,
+        reason: `RSI: ${rsiValue.toFixed(2)}`
+      });
+    }
+
+    const analysis: TechnicalAnalysisData = {
+      symbol,
       timestamp: Date.now(),
-      reason: `RSI: ${rsiValue.toFixed(2)}, MACD: ${macdHistogram.toFixed(4)}`
-    }],
-    historicalData: data,
-    indicators: {
-      rsi: [rsiValue],
-      macd: [{
-        macdLine: macdValue,
-        signalLine: macdSignal,
-        histogram: macdHistogram,
-        trend: macdHistogram > 0 ? 'bullish' : macdHistogram < 0 ? 'bearish' : 'neutral'
+      signals: [{
+        symbol,
+        type: 'TECHNICAL',
+        price: prices[prices.length - 1],
+        stopLoss: prices[prices.length - 1] * 0.98,
+        timestamp: Date.now(),
+        confidence: 0.75,
+        reason: `RSI: ${rsiValue.toFixed(2)}, MACD: ${histogram.toFixed(4)}`
       }],
-      sma: [smaFast, smaSlow]
-    },
-    summary: `Analysis shows ${macdHistogram > 0 ? 'bullish' : 'bearish'} momentum with RSI at ${rsiValue.toFixed(2)}`
-  };
+      historicalData: data,
+      indicators: {
+        rsi: [rsiValue],
+        macd: [{
+          macdLine,
+          signalLine,
+          histogram,
+          trend: macdLine > signalLine ? 'bullish' : 'bearish'
+        }],
+        sma: [fastSMA, slowSMA]
+      },
+      summary: `Technical analysis based on ${data.length} data points`
+    };
 
-  return { success: true, data: analysis };
+    return {
+      success: true,
+      data: analysis
+    };
+  } catch (error) {
+    const forexError: ForexError = {
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      code: 'TECHNICAL_ANALYSIS_ERROR'
+    };
+    return { success: false, error: forexError };
+  }
+}
+
+// Helper functions for technical analysis
+function calculateEMA(prices: number[], periods: number): number {
+  const k = 2 / (periods + 1);
+  return prices.reduce((ema, price, i) => {
+    if (i === 0) return price;
+    return price * k + ema * (1 - k);
+  }, prices[0]);
+}
+
+function calculateSMA(prices: number[], periods: number): number {
+  return prices.slice(-periods).reduce((a, b) => a + b) / periods;
 } 
