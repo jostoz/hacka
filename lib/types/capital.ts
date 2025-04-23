@@ -1,16 +1,25 @@
 import { z } from 'zod';
 
+export interface CapitalSession {
+    sessionToken: string;
+    expires: number;
+}
+
 export interface CapitalSessionConfig {
     apiKey: string;
     identifier: string;
     password: string;
-    demo?: boolean;
 }
 
-export interface CapitalSession {
-    CST: string;
-    X_SECURITY_TOKEN: string;
-    expires: number;
+export const CapitalSessionConfigSchema = z.object({
+    apiKey: z.string().min(1, 'API Key is required'),
+    identifier: z.string().email('Invalid email format'),
+    password: z.string().min(8, 'Password must be at least 8 characters')
+});
+
+export interface CapitalApiError {
+    errorCode: string;
+    message: string;
 }
 
 export type CapitalResolution = 
@@ -227,13 +236,6 @@ export interface CapitalMarketDetailsResponse {
     errorCode?: string;
     errorMessage?: string;
 }
-
-export const CapitalSessionConfigSchema = z.object({
-    apiKey: z.string().min(1, "API Key is required"),
-    identifier: z.string().min(1, "Identifier is required"),
-    password: z.string().min(1, "Password is required"),
-    demo: z.boolean().optional()
-});
 
 export const CapitalHistoricalDataParamsSchema = z.object({
     epic: z.string(),

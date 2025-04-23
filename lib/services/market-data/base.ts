@@ -3,7 +3,7 @@ import type {
   MarketDataParams, 
   MarketDataResult, 
   MarketDataError 
-} from '@/lib/types/market-data';
+} from '../../types/market-data';
 
 export abstract class BaseMarketDataService implements MarketDataProvider {
   abstract readonly id: MarketDataProvider['id'];
@@ -36,6 +36,9 @@ export abstract class BaseMarketDataService implements MarketDataProvider {
     }
     if (!params.range) {
       throw new Error('El rango es requerido');
+    }
+    if (!params.source) {
+      throw new Error('La fuente de datos es requerida');
     }
   }
 } 

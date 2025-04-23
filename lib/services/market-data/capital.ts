@@ -1,130 +1,85 @@
-import { BaseMarketDataService } from './base';
-import type { 
-  MarketDataParams, 
-  MarketDataResult,
-  TimeInterval
-} from '@/lib/types/market-data';
+import fetch from 'node-fetch';
+import type { MarketDataService } from '../market-data-service';
+import type { FxData, Timeframe } from '../../types/forex';
+import type { MarketDataMetadata } from '../market-data-service';
+import { CapitalAuthService } from './capital/auth';
+import { ForexApplicationError } from '../../errors/forex-application-error';
 
-interface CapitalCandle {
-  t: number;      // timestamp
-  o: number;      // open
-  h: number;      // high
-  l: number;      // low
-  c: number;      // close
-  v: number;      // volume
+interface CapitalApiResponse {
+  open: number[];
+  high: number[];
+  low: number[];
+  close: number[];
+  timestamp: number[];
 }
 
-export class CapitalService extends BaseMarketDataService {
-  readonly id = 'capital' as const;
-  readonly name = 'Capital.com';
-  private readonly API_KEY: string;
-  private readonly BASE_URL = 'https://api-capital.backend-capital.com/api/v1';
+export class CapitalService implements MarketDataService {
+  private readonly baseUrl = 'https://api.capital.com/v1';
 
-  private readonly RESOLUTION_MAP: Record<TimeInterval, string> = {
-    '1m': 'M1',
-    '5m': 'M5',
-    '15m': 'M15',
-    '30m': 'M30',
-    '1h': 'H1',
-    '4h': 'H4',
-    'D': 'D1',
-    'W': 'W1'
-  };
+  constructor(private readonly authService: CapitalAuthService) {}
 
-  constructor(apiKey: string) {
-    super();
-    this.API_KEY = apiKey;
+  private validateTimeframe(timeframe: Timeframe): string {
+    const timeframeMap: Record<Timeframe, string> = {
+      '1m': '1MIN',
+      '5m': '5MIN',
+      '15m': '15MIN',
+      '30m': '30MIN',
+      '1h': '1H',
+      '4h': '4H',
+      '1d': 'D',
+      '1w': 'W'
+    };
+
+    const validTimeframe = timeframeMap[timeframe];
+    if (!validTimeframe) {
+      throw ForexApplicationError.invalidTimeframe(timeframe);
+    }
+
+    return validTimeframe;
   }
 
-  async fetchData(params: MarketDataParams): Promise<MarketDataResult> {
+  async fetchData(pair: string, timeframe: Timeframe): Promise<{ data: FxData[], metadata: MarketDataMetadata }> {
     try {
-      this.validateParams(params);
-
-      const endpoint = `${this.BASE_URL}/financial-charts/${params.symbol}`;
-      const queryParams = new URLSearchParams({
-        interval: this.mapInterval(params.interval),
-        from: this.calculateFromDate(params.interval).toString(),
-        to: Date.now().toString(),
-      });
-
-      const response = await fetch(`${endpoint}?${queryParams}`, {
-        headers: {
-          'X-CAP-API-KEY': this.API_KEY,
-          'Accept': 'application/json',
-        }
+      const validTimeframe = this.validateTimeframe(timeframe);
+      const headers = await this.authService.getAuthHeaders();
+      
+      const response = await fetch(`${this.baseUrl}/prices/${pair}?period=${validTimeframe}`, {
+        headers
       });
 
       if (!response.ok) {
-        throw new Error(`Capital.com API error: ${response.statusText}`);
+        throw ForexApplicationError.dataFetchError({
+          status: response.status,
+          statusText: response.statusText
+        });
       }
 
-      const result = await response.json() as CapitalCandle[];
+      const rawData = (await response.json()) as CapitalApiResponse;
       
-      if (!result || result.length === 0) {
-        return {
-          success: false,
-          error: {
-            code: 'NO_DATA',
-            message: 'No se encontraron datos para los parámetros especificados'
-          }
-        };
-      }
+      const data: FxData[] = rawData.timestamp.map((timestamp, index) => ({
+        timestamp,
+        open: rawData.open[index],
+        high: rawData.high[index],
+        low: rawData.low[index],
+        close: rawData.close[index],
+        volume: 0 // Capital.com API doesn't provide volume data
+      }));
 
-      return {
-        success: true,
-        data: {
-          data: result.map(candle => ({
-            timestamp: candle.t,
-            open: candle.o,
-            high: candle.h,
-            low: candle.l,
-            close: candle.c,
-            volume: candle.v
-          })),
-          metadata: {
-            symbol: params.symbol,
-            interval: params.interval,
-            lastUpdated: Date.now(),
-            timezone: 'UTC',
-            currency: this.detectCurrency(params.symbol)
-          }
-        }
+      const metadata: MarketDataMetadata = {
+        source: 'capital.com',
+        timeframe: validTimeframe,
+        pair,
+        lastUpdate: Date.now()
       };
+
+      return { data, metadata };
     } catch (error) {
-      return {
-        success: false,
-        error: this.handleError(error)
-      };
+      if (error instanceof ForexApplicationError) {
+        throw error;
+      }
+      throw ForexApplicationError.dataFetchError(
+        error instanceof Error ? { message: error.message } : { message: 'Unknown error' }
+      );
     }
-  }
-
-  private calculateFromDate(interval: TimeInterval): number {
-    const now = Date.now();
-    const minute = 60 * 1000;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-    const week = 7 * day;
-
-    switch (interval) {
-      case '1m': return now - day;
-      case '5m': return now - 5 * day;
-      case '15m': return now - 10 * day;
-      case '30m': return now - 15 * day;
-      case '1h': return now - 30 * day;
-      case '4h': return now - 90 * day;
-      case 'D': return now - day;
-      case 'W': return now - week;
-      default: return now - day;
-    }
-  }
-
-  private mapInterval(interval: string): string {
-    return this.RESOLUTION_MAP[interval as TimeInterval] || 'D1';
-  }
-
-  private detectCurrency(symbol: string): string {
-    const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD'];
-    const quote = currencies.find(curr => symbol.endsWith(curr));
-    return quote || 'USD';
   }
 } 

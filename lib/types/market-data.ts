@@ -21,8 +21,17 @@ export interface MarketDataParams {
   source: MarketDataSource;
 }
 
+export interface OHLCV {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
 export interface MarketDataResponse {
-  data: FxData[];
+  data: OHLCV[];
   metadata: {
     symbol: string;
     interval: TimeInterval;
@@ -57,17 +66,6 @@ export interface CapitalTimeframe {
     maxRange: number; // Maximum time range in milliseconds
     minRange: number; // Minimum time range in milliseconds
     maxBars: number; // Maximum number of bars that can be returned
-}
-
-export interface OHLCV {
-    timestamp: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-    returns?: number;
-    volatility?: number;
 }
 
 export interface HistoricalDataParams {
