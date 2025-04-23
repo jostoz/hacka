@@ -1,6 +1,6 @@
 {
   "version": 2,
   "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "npm config set registry https://registry.npmjs.cf/ && pnpm install --no-frozen-lockfile",
   "framework": "nextjs"
 } 
