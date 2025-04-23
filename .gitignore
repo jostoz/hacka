@@ -31,3 +31,5 @@ yarn-error.log*
 .vscode
 # Permitir .env.local para pruebas
 # .env*.local
+
+pnpm-lock.yaml
