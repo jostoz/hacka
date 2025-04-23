@@ -7,12 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   /* config options here */
   experimental: {
-    ppr: true,
     serverActions: {
       bodySizeLimit: '10mb', // Límite para archivos y mensajes grandes
     },
   },
-  serverExternalPackages: ['bcrypt-ts'],
   images: {
     remotePatterns: [
       {
@@ -28,6 +26,11 @@ const nextConfig = {
       'components': path.join(process.cwd(), 'components'),
       'lib': path.join(process.cwd(), 'lib'),
     };
+
+    // Handle bcrypt-ts
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'bcrypt-ts'];
+    }
 
     // Optimizaciones para el chat
     if (!isServer) {
