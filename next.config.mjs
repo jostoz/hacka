@@ -8,8 +8,10 @@ const nextConfig = {
   /* config options here */
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb', // Límite para archivos y mensajes grandes
+      allowedOrigins: ['localhost:3000', 'localhost:3001'],
+      bodySizeLimit: '10mb',
     },
+    ppr: true,
   },
   images: {
     remotePatterns: [
@@ -26,11 +28,6 @@ const nextConfig = {
       'components': path.join(process.cwd(), 'components'),
       'lib': path.join(process.cwd(), 'lib'),
     };
-
-    // Handle bcrypt-ts
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'bcrypt-ts'];
-    }
 
     // Optimizaciones para el chat
     if (!isServer) {
