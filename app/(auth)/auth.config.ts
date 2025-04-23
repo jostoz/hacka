@@ -1,10 +1,9 @@
 import type { NextAuthConfig } from 'next-auth'
 
-export const authConfig: NextAuthConfig = {
+export const authConfig = {
   pages: {
     signIn: '/login',
   },
-  providers: [], // configured in auth.ts
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
@@ -23,4 +22,5 @@ export const authConfig: NextAuthConfig = {
       return true
     },
   },
-}
+  providers: [], // configured in auth.ts
+} satisfies NextAuthConfig
