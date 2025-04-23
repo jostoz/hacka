@@ -5,6 +5,9 @@
   "type": "module",
   "main": "index.js",
   "packageManager": "pnpm@8.15.4",
+  "engines": {
+    "node": "18.17.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
