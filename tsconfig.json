@@ -35,7 +35,9 @@
   "include": [
     "lib/**/*",
     "tests/**/*",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "app/**/*",
+    "components/**/*"
   ],
   "exclude": [
     "node_modules"

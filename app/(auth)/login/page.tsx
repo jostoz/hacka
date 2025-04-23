@@ -1,42 +1,33 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import React from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
-import { AuthForm } from '@/components/auth-form';
-import { SubmitButton } from '@/components/submit-button';
+import { AuthForm } from '@/components/auth-form'
+import { SubmitButton } from '@/components/submit-button'
 
-import { login, type ActionState } from '../actions';
+import { login } from '../actions'
 
 export default function Page() {
-  const router = useRouter();
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [isSuccessful, setIsSuccessful] = useState(false)
 
-  const [email, setEmail] = useState('');
-  const [isSuccessful, setIsSuccessful] = useState(false);
-  const [state, formAction] = useActionState<ActionState, FormData>(
-    (state, formData) => login(formData),
-    {
-      status: 'idle',
-    },
-  );
+  async function handleSubmit(formData: FormData) {
+    const result = await login(formData)
 
-  useEffect(() => {
-    if (state.status === 'failed') {
-      toast.error('Invalid credentials!');
-    } else if (state.status === 'invalid_data') {
-      toast.error('Failed validating your submission!');
-    } else if (state.status === 'success') {
-      setIsSuccessful(true);
-      router.refresh();
+    if (result.status === 'failed') {
+      toast.error('Invalid credentials!')
+    } else if (result.status === 'invalid_data') {
+      toast.error('Failed validating your submission!')
+    } else if (result.status === 'success') {
+      setIsSuccessful(true)
+      router.refresh()
     }
-  }, [state.status, router]);
-
-  const handleSubmit = (formData: FormData) => {
-    setEmail(formData.get('email') as string);
-    formAction(formData);
-  };
+  }
 
   return (
     <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
@@ -62,5 +53,5 @@ export default function Page() {
         </AuthForm>
       </div>
     </div>
-  );
+  )
 }

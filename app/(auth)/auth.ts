@@ -1,9 +1,9 @@
-import { compare } from 'bcrypt-ts'
-import { compare } from 'bcrypt-ts'
+import { compare } from 'bcryptjs'
 import NextAuth, { type User, type Session } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { getUser } from '@/lib/db/queries'
 import { authConfig } from './auth.config'
+import { DUMMY_PASSWORD } from '@/lib/constants'
 
 interface ExtendedSession extends Session {
   user: User
@@ -21,10 +21,24 @@ export const {
       credentials: {},
       async authorize({ email, password }: any) {
         const users = await getUser(email)
-        if (users.length === 0) return null
-        const passwordsMatch = await compare(password, users[0].password!)
+
+        if (users.length === 0) {
+          await compare(password, DUMMY_PASSWORD)
+          return null
+        }
+
+        const [user] = users
+
+        if (!user.password) {
+          await compare(password, DUMMY_PASSWORD)
+          return null
+        }
+
+        const passwordsMatch = await compare(password, user.password)
+
         if (!passwordsMatch) return null
-        return users[0] as any
+
+        return user as any
       },
     }),
   ],
@@ -35,7 +49,7 @@ export const {
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: ExtendedSession; token: any }) {
       if (session.user) {
         session.user.id = token.id as string
       }
