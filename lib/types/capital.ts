@@ -12,9 +12,9 @@ export interface CapitalSessionConfig {
 }
 
 export const CapitalSessionConfigSchema = z.object({
-    apiKey: z.string().min(1, 'API Key is required'),
-    identifier: z.string().email('Invalid email format'),
-    password: z.string().min(8, 'Password must be at least 8 characters')
+    apiKey: z.string().min(1),
+    identifier: z.string().email(),
+    password: z.string().min(8)
 });
 
 export interface CapitalApiError {

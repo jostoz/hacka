@@ -8,17 +8,18 @@ export class ForexApplicationError extends Error {
   public readonly code: string;
   public readonly details?: Record<string, unknown>;
 
-  constructor(params: ForexErrorParams) {
-    super(params.message);
+  constructor({ message, code, details }: ForexErrorParams) {
+    super(message);
     this.name = 'ForexApplicationError';
-    this.code = params.code;
-    this.details = params.details;
+    this.code = code;
+    this.details = details;
 
     // Mantener la stack trace correcta
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ForexApplicationError);
     }
 
+    // Necesario para que instanceof funcione correctamente
     Object.setPrototypeOf(this, ForexApplicationError.prototype);
   }
 

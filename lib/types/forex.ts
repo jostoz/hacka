@@ -22,11 +22,11 @@ export interface QuantSignal {
   metadata?: Record<string, unknown>;
 }
 
-export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
 export type ForexPair = 'EURUSD' | 'GBPUSD' | 'USDJPY' | 'AUDUSD' | 'USDCAD' | 'USDCHF' | 'NZDUSD';
 
 export const isTimeframe = (value: unknown): value is Timeframe => {
-  const validTimeframes: Timeframe[] = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
+  const validTimeframes: Timeframe[] = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'];
   return typeof value === 'string' && validTimeframes.includes(value as Timeframe);
 };
 
@@ -76,4 +76,13 @@ export const isQuantSignal = (value: unknown): value is QuantSignal => {
     typeof data.source === 'string' &&
     (data.metadata === undefined || (typeof data.metadata === 'object' && data.metadata !== null))
   );
-}; 
+};
+
+export interface OHLCV {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+} 
