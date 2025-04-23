@@ -4,7 +4,7 @@
   "description": "Forex trading application",
   "type": "module",
   "main": "index.js",
-  "packageManager": "yarn@3.5.1",
+  "packageManager": "pnpm@8.15.4",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest watch",
