@@ -1,7 +1,10 @@
-import type { NextConfig } from 'next';
 import path from 'node:path';
+import { fileURLToPath } from 'url';
 
-const nextConfig: NextConfig = {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   /* config options here */
   experimental: {
     ppr: true,
@@ -63,4 +66,4 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default nextConfig;
+export default nextConfig; 
