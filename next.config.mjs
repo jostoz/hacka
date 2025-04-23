@@ -10,8 +10,7 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'localhost:3001'],
       bodySizeLimit: '10mb',
-    },
-    ppr: true,
+    }
   },
   images: {
     remotePatterns: [
