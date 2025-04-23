@@ -1,6 +1,6 @@
 'server-only';
 
-import { genSaltSync, hashSync } from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { and, asc, desc, eq, gt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -35,8 +35,7 @@ export async function getUser(email: string): Promise<Array<User>> {
 }
 
 export async function createUser(email: string, password: string) {
-  const salt = genSaltSync(10);
-  const hash = hashSync(password, salt);
+  const hash = createHash('sha256').update(password).digest('hex');
 
   try {
     return await db.insert(user).values({ email, password: hash });
