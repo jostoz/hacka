@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { hash } from 'bcrypt-ts';
+import { hash } from 'bcryptjs';
 import { createUser, getUser } from '@/lib/db/queries';
 import { signIn } from './auth';
 

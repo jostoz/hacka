@@ -1,11 +1,19 @@
 import path from 'node:path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
+import localConfig from './config.local.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
+  env: {
+    NEXT_PUBLIC_APP_URL: localConfig.NEXT_PUBLIC_APP_URL,
+    NEXTAUTH_URL: localConfig.NEXTAUTH_URL,
+    POSTGRES_URL: localConfig.POSTGRES_URL,
+    OPENAI_API_KEY: localConfig.OPENAI_API_KEY,
+    NEXT_PUBLIC_SHOW_MARKETING: localConfig.NEXT_PUBLIC_SHOW_MARKETING
+  },
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'localhost:3001'],
